@@ -1,0 +1,19 @@
+{
+    "name": "maildrop/maildrop-php",
+    "description": "The official Maildrop SDK provides methods for all API functions.",
+    "require": {
+        "guzzlehttp/guzzle": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Maildrop\\": "src/"
+        }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "David Tourel",
+            "email": "hello@maildrop.fr"
+        }
+    ]
+}

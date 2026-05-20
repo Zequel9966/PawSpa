@@ -1,0 +1,90 @@
+<?php
+require_once 'config.php';
+
+if (!isset($_SESSION['user'])) {
+    echo json_encode(['error' => 'No autorizado']);
+    exit;
+}
+
+$data = [];
+
+// 1. Productos
+$result = $conn->query("SELECT * FROM productos WHERE activo = 1");
+$data['productos'] = $result->fetch_all(MYSQLI_ASSOC);
+
+// 2. Clientes - VERSIÓN CORREGIDA CON MÁS DATOS
+$sql = "SELECT id, nombre, email, telefono, puntos, fecha_registro 
+        FROM usuarios 
+        WHERE rol = 'client' AND activo = 1 
+        ORDER BY id DESC";
+$result = $conn->query($sql);
+
+$clientes = [];
+while ($row = $result->fetch_assoc()) {
+    // Contar mascotas del cliente
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM mascotas WHERE cliente_id = ?");
+    $stmt->bind_param("i", $row['id']);
+    $stmt->execute();
+    $mascotas = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    
+    // Determinar nivel según puntos
+    $nivel = 'Bronze';
+    if ($row['puntos'] >= 1000) $nivel = 'Gold';
+    elseif ($row['puntos'] >= 500) $nivel = 'Silver';
+    
+    $clientes[] = [
+        'id' => $row['id'],
+        'nombre' => $row['nombre'],
+        'email' => $row['email'],
+        'telefono' => $row['telefono'] ?? '',
+        'puntos' => $row['puntos'] ?? 0,
+        'total_mascotas' => $mascotas['total'] ?? 0,
+        'ultima_visita' => $row['fecha_registro'] ?? 'Nunca',
+        'nivel' => $nivel
+    ];
+}
+$data['clientes'] = $clientes;
+
+// 3. Citas con JOIN para obtener nombres
+$sql = "SELECT c.*, u.nombre as cliente_nombre 
+        FROM citas c 
+        JOIN usuarios u ON c.cliente_id = u.id 
+        ORDER BY c.fecha DESC LIMIT 50";
+$result = $conn->query($sql);
+$data['citas'] = $result->fetch_all(MYSQLI_ASSOC);
+
+// 4. Usuarios del sistema
+$result = $conn->query("SELECT id, nombre, email, rol, activo FROM usuarios");
+$data['usuarios'] = $result->fetch_all(MYSQLI_ASSOC);
+
+// 5. Mascotas
+$sql = "SELECT m.*, u.nombre as duenio_nombre 
+        FROM mascotas m 
+        JOIN usuarios u ON m.cliente_id = u.id";
+$result = $conn->query($sql);
+$data['mascotas'] = $result->fetch_all(MYSQLI_ASSOC);
+
+// 6. Configuración
+$result = $conn->query("SELECT * FROM config LIMIT 1");
+if ($result && $result->num_rows > 0) {
+    $data['config'] = $result->fetch_assoc();
+} else {
+    $data['config'] = [
+        'nombre' => 'PawSpa Bolivia',
+        'wa' => '+591 72345678',
+        'stockMin' => 5,
+        'recordatorio' => 2
+    ];
+}
+
+echo json_encode(['success' => true, 'data' => $data]);
+
+// 5. Mascotas - CON DATOS COMPLETOS
+$sql = "SELECT m.*, u.nombre as duenio_nombre, u.id as duenio_id
+        FROM mascotas m 
+        JOIN usuarios u ON m.cliente_id = u.id
+        WHERE u.rol = 'client' AND u.activo = 1";
+$result = $conn->query($sql);
+$data['mascotas'] = $result->fetch_all(MYSQLI_ASSOC);
+?>

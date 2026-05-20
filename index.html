@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawSpa — Sistema Integral de Spa & Tienda de Mascotas</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="paw-icon">🐾</div>
+      <h1>PawSpa</h1>
+      <p>Sistema Integral de Spa & Tienda de Mascotas</p>
+    </div>
+    <div id="loginError" class="error-message" style="display:none"></div>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="loginUser" placeholder="correo@pawspa.com" value="admin@pawspa.com">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" value="admin123">
+    </div>
+    <div class="form-group">
+      <label>Rol de acceso</label>
+      <select id="loginRole">
+        <option value="admin">Administrador</option>
+        <option value="recep">Recepcionista</option>
+        <option value="groo">Groomer</option>
+        <option value="client">Cliente</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Ingresar al Sistema</button>
+    <div class="demo-roles">
+      <p>Acceso rápido por rol demo</p>
+      <div class="role-pills">
+        <div class="role-pill pill-admin" onclick="quickLogin('admin')">👑 Admin</div>
+        <div class="role-pill pill-recep" onclick="quickLogin('recep')">🗓️ Recepción</div>
+        <div class="role-pill pill-groo" onclick="quickLogin('groo')">✂️ Groomer</div>
+        <div class="role-pill pill-client" onclick="quickLogin('client')">🐶 Cliente</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     APP SHELL
+═══════════════════════════════════ -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">Paw<span>Spa</span></span>
+      <span id="topbarSection" style="color:var(--gray);font-size:.85rem"></span>
+    </div>
+    <div class="topbar-right">
+      <div class="user-badge" onclick="toggleUserMenu()">
+        <div class="user-avatar" id="userAvatar"></div>
+        <div class="user-info">
+          <div class="user-name" id="userName"></div>
+          <div class="user-role" id="userRoleLabel"></div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">↩ Salir</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar"></div>
+
+    <!-- MAIN -->
+    <div class="main-content" id="mainContent">
+
+      <!-- PAGE: DASHBOARD -->
+      <div id="page-dashboard" class="page active">
+        <div class="page-header">
+          <h2 id="dashTitle">Panel de Control</h2>
+          <p id="dashSub">Resumen del día — <span id="todayDate"></span></p>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Citas de Hoy</div><div class="card-subtitle">Actividad del día</div></div>
+              <span class="badge badge-teal">6 totales</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Hora</th><th>Mascota</th><th>Servicio</th><th>Groomer</th><th>Estado</th></tr></thead>
+                <tbody id="citasHoyBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Ocupación por Groomer</div><div class="card-subtitle">% del día laboral</div></div>
+            </div>
+            <div id="ocupacionGroomers"></div>
+            <div style="margin-top:28px">
+              <div class="card-title" style="margin-bottom:14px">Ventas esta semana</div>
+              <div class="bar-chart" id="ventasSemana"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Notificaciones Recientes</div></div>
+            <button class="btn btn-ghost btn-sm">Ver todas</button>
+          </div>
+          <div id="notificacionesContainer"></div>
+        </div>
+      </div>
+
+      <!-- PAGE: AGENDA -->
+      <div id="page-agenda" class="page">
+        <div class="page-header">
+          <h2>Agenda de Citas</h2>
+          <p>Gestión de turnos y disponibilidad de groomers</p>
+          <div class="header-actions">
+            <button class="btn btn-teal" onclick="openModal('modalNuevaCita')">➕ Nueva Cita</button>
+            <button class="btn btn-outline" onclick="openModal('modalBloqueo')">🚫 Bloquear Horario</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;gap:10px;align-items:center">
+              <button class="btn btn-ghost btn-sm" onclick="prevWeek()">◀</button>
+              <span style="font-weight:600;font-size:.95rem" id="calWeekLabel"></span>
+              <button class="btn btn-ghost btn-sm" onclick="nextWeek()">▶</button>
+            </div>
+            <div style="display:flex;gap:8px">
+              <span class="badge badge-teal">● Disponible</span>
+              <span class="badge badge-orange">● Ocupado</span>
+              <span class="badge badge-red">● Bloqueado</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Lista de Citas — Próximas</div>
+            <input type="text" id="searchCita" placeholder="🔍 Buscar cliente o mascota..." oninput="filterCitas(this.value)" style="padding:8px 14px;border:1.5px solid var(--gray-light);border-radius:8px;font-family:inherit;font-size:.85rem;outline:none;width:240px">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Fecha/Hora</th><th>Cliente</th><th>Mascota</th><th>Servicio</th><th>Groomer</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="citasListaBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- REST OF PAGES (similar structure, dynamic content via JS) -->
+      <!-- ... mantén el resto de tus páginas pero vacíalas de contenido estático -->
+      
+    </div>
+  </div>
+</div>
+
+<!-- CART PANEL -->
+<div class="cart-panel" id="cartPanel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <h3 style="font-size:1.1rem">🛒 Carrito</h3>
+    <button class="modal-close" onclick="toggleCart()">×</button>
+  </div>
+  <div id="cartItems"></div>
+  <div style="border-top:2px solid var(--gray-light);padding-top:16px;margin-top:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-weight:600">Total:</span>
+      <span class="cart-total" id="cartTotal">Bs. 0</span>
+    </div>
+    <button class="btn btn-whatsapp" style="width:100%;margin-bottom:10px" onclick="sendWhatsApp()">📱 Pedido por WhatsApp</button>
+    <button class="btn btn-teal" style="width:100%" onclick="procesarCobro()">💳 Cobrar aquí</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODALS (mantén tus modales) -->
+<!-- ... -->
+
+<script src="js/app.js"></script>
+</body>
+</html>

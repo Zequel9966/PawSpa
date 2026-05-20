@@ -1,0 +1,6 @@
+{
+    "require": {
+        "maildrop/maildrop-php": "^1.4",
+        "symfony/mime": "^8.0"
+    }
+}
