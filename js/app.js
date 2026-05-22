@@ -256,3 +256,47 @@ setInterval(() => {
     const timerEl = document.getElementById('timer');
     if (timerEl) timerEl.textContent = `${h}:${m}:${s}`;
 }, 1000);
+
+// Función para verificar cliente en BD
+async function verificarClienteBD(id) {
+    try {
+        const response = await fetch(`${API_URL}clientes.php?action=verificar&id=${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Cliente encontrado en BD:', data.cliente);
+            showToast(`Cliente verificado: ${data.cliente.nombre}`, 'success');
+            return data.cliente;
+        } else {
+            console.log('❌ Cliente no encontrado:', data.error);
+            showToast('Cliente no encontrado en BD', 'error');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        return null;
+    }
+}
+
+// Función para verificar mascota en BD
+async function verificarMascotaBD(id) {
+    try {
+        const response = await fetch(`${API_URL}get_all_data.php`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const mascota = data.data.mascotas.find(m => m.id === id);
+            if (mascota) {
+                console.log('✅ Mascota encontrada en BD:', mascota);
+                showToast(`Mascota verificado: ${mascota.nombre}`, 'success');
+                return mascota;
+            } else {
+                showToast('Mascota no encontrada en BD', 'error');
+                return null;
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        return null;
+    }
+}

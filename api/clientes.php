@@ -1,4 +1,8 @@
 <?php
+// Desactivar errores en pantalla
+ini_set('display_errors', 0);
+error_reporting(0);
+
 require_once 'config.php';
 
 header('Content-Type: application/json');
@@ -26,21 +30,16 @@ function guardarLog($conn, $tipo, $accion, $detalle) {
     $stmt->close();
 }
 
-function hasRole($roles) {
-    if (!isset($_SESSION['user'])) return false;
-    
-    $userRole = $_SESSION['user']['rol'];
-    if (is_array($roles)) {
-        return in_array($userRole, $roles);
-    }
-    return $userRole === $roles;
-}
-
 // ============================================
 // GET - Obtener clientes
 // ============================================
 if ($method === 'GET' && !isset($_GET['action'])) {
-    $sql = "SELECT id, nombre, email, telefono FROM usuarios WHERE rol = 'client' AND activo = 1 ORDER BY id DESC";
+    if (!hasRole(['admin', 'recep'])) {
+        echo json_encode(['success' => false, 'error' => 'No autorizado']);
+        exit;
+    }
+    
+    $sql = "SELECT id, nombre, email, telefono, puntos FROM usuarios WHERE rol = 'client' AND activo = 1 ORDER BY id DESC";
     $result = $conn->query($sql);
     
     if (!$result) {
@@ -57,10 +56,21 @@ if ($method === 'GET' && !isset($_GET['action'])) {
         $mascotas = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         
-        $row['total_mascotas'] = $mascotas['total'];
-        $row['ultima_visita'] = 'Nunca';
-        $row['nivel'] = 'Bronze';
-        $clientes[] = $row;
+        // Determinar nivel según puntos
+        $nivel = 'Bronze';
+        if ($row['puntos'] >= 1000) $nivel = 'Gold';
+        elseif ($row['puntos'] >= 500) $nivel = 'Silver';
+        
+        $clientes[] = [
+            'id' => $row['id'],
+            'nombre' => $row['nombre'],
+            'email' => $row['email'],
+            'telefono' => $row['telefono'] ?? '',
+            'total_mascotas' => $mascotas['total'] ?? 0,
+            'ultima_visita' => 'Nunca',
+            'nivel' => $nivel,
+            'puntos' => $row['puntos'] ?? 0
+        ];
     }
     
     echo json_encode(['success' => true, 'clientes' => $clientes]);
@@ -97,6 +107,11 @@ if ($method === 'GET' && isset($_GET['action']) && $_GET['action'] === 'mascotas
 // POST - Crear nuevo cliente
 // ============================================
 if ($method === 'POST' && !isset($_GET['action'])) {
+    if (!hasRole(['admin', 'recep'])) {
+        echo json_encode(['success' => false, 'error' => 'No autorizado']);
+        exit;
+    }
+    
     $data = json_decode(file_get_contents('php://input'), true);
     
     $nombre = trim($data['nombre'] ?? '');
@@ -134,7 +149,6 @@ if ($method === 'POST' && !isset($_GET['action'])) {
         $stmt2->execute();
         $stmt2->close();
         
-        // GUARDAR LOG
         guardarLog($conn, 'create', 'Cliente creado', "ID: {$usuario_id} - Nombre: {$nombre} - Email: {$email}");
         
         echo json_encode([
@@ -211,10 +225,16 @@ if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'mascota
 }
 
 // ============================================
-// PUT - Actualizar cliente
+// PUT - Actualizar cliente (CORREGIDO)
 // ============================================
-if ($method === 'PUT' && !isset($_GET['action'])) {
-    $data = json_decode(file_get_contents('php://input'), true);
+if ($method === 'PUT') {
+    // Obtener los datos del cuerpo de la petición
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true);
+    
+    // Log para depuración
+    error_log("PUT request received. Input: " . $input);
+    error_log("Decoded data: " . print_r($data, true));
     
     $id = $data['id'] ?? 0;
     $nombre = trim($data['nombre'] ?? '');
@@ -222,8 +242,15 @@ if ($method === 'PUT' && !isset($_GET['action'])) {
     $email = trim($data['email'] ?? '');
     $nivel = $data['nivel'] ?? 'Bronze';
     
-    if (!$id || empty($nombre)) {
-        echo json_encode(['success' => false, 'error' => 'ID y nombre son requeridos']);
+    // Validaciones
+    if (!$id || empty($nombre) || empty($email)) {
+        echo json_encode(['success' => false, 'error' => 'ID, nombre y email son requeridos']);
+        exit;
+    }
+    
+    // Verificar permisos (solo admin y recep)
+    if (!hasRole(['admin', 'recep'])) {
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para editar clientes']);
         exit;
     }
     
@@ -231,27 +258,37 @@ if ($method === 'PUT' && !isset($_GET['action'])) {
     $stmt = $conn->prepare("SELECT id FROM usuarios WHERE email = ? AND id != ?");
     $stmt->bind_param("si", $email, $id);
     $stmt->execute();
-    if ($stmt->get_result()->num_rows > 0) {
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
         echo json_encode(['success' => false, 'error' => 'El email ya está en uso por otro usuario']);
+        $stmt->close();
         exit;
     }
     $stmt->close();
     
+    // Actualizar el usuario
     $stmt = $conn->prepare("UPDATE usuarios SET nombre = ?, email = ?, telefono = ? WHERE id = ? AND rol = 'client'");
     $stmt->bind_param("sssi", $nombre, $email, $telefono, $id);
     
     if ($stmt->execute()) {
-        // Actualizar nivel (puntos)
-        $puntos = $nivel === 'Gold' ? 1000 : ($nivel === 'Silver' ? 500 : 0);
+        // Actualizar puntos según nivel
+        $puntos = 0;
+        if ($nivel === 'Gold') $puntos = 1000;
+        elseif ($nivel === 'Silver') $puntos = 500;
+        
         $stmt2 = $conn->prepare("UPDATE usuarios SET puntos = ? WHERE id = ?");
         $stmt2->bind_param("ii", $puntos, $id);
         $stmt2->execute();
         $stmt2->close();
         
-        guardarLog($conn, 'edit', 'Cliente actualizado', "ID: {$id} - Nombre: {$nombre} - Email: {$email}");
+        // Guardar log
+        if (function_exists('guardarLog')) {
+            guardarLog($conn, 'edit', 'Cliente actualizado', "ID: {$id} - Nombre: {$nombre}");
+        }
+        
         echo json_encode(['success' => true, 'message' => 'Cliente actualizado correctamente']);
     } else {
-        echo json_encode(['success' => false, 'error' => $stmt->error]);
+        echo json_encode(['success' => false, 'error' => 'Error al actualizar: ' . $stmt->error]);
     }
     $stmt->close();
     exit;
@@ -292,7 +329,7 @@ if ($method === 'PUT' && isset($_GET['action']) && $_GET['action'] === 'mascota_
 }
 
 // ============================================
-// DELETE - Eliminar cliente FÍSICAMENTE (con cascada)
+// DELETE - Eliminar cliente FÍSICAMENTE
 // ============================================
 if ($method === 'DELETE' && !isset($_GET['action'])) {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -303,7 +340,7 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
         exit;
     }
     
-    // Verificar que solo admin pueda eliminar
+    // Solo admin puede eliminar
     if (!hasRole(['admin'])) {
         echo json_encode(['success' => false, 'error' => 'No tienes permiso para eliminar clientes']);
         exit;
@@ -334,17 +371,17 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
         exit;
     }
     
-    // INICIAR TRANSACCIÓN para eliminar todo en cascada
+    // INICIAR TRANSACCIÓN
     $conn->begin_transaction();
     
     try {
-        // 1. Eliminar mascotas del cliente
+        // 1. Eliminar mascotas
         $stmt = $conn->prepare("DELETE FROM mascotas WHERE cliente_id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $stmt->close();
         
-        // 2. Eliminar registros de clientes
+        // 2. Eliminar registro de clientes
         $stmt = $conn->prepare("DELETE FROM clientes WHERE usuario_id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -368,7 +405,7 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
         $stmt->execute();
         $stmt->close();
         
-        // 6. Finalmente eliminar el usuario
+        // 6. Eliminar el usuario
         $stmt = $conn->prepare("DELETE FROM usuarios WHERE id = ? AND rol = 'client'");
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -376,10 +413,9 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
         
         $conn->commit();
         
-        $nombreCliente = $cliente['nombre'];
-        guardarLog($conn, 'delete', 'Cliente eliminado permanentemente', "ID: {$id} - Nombre: {$nombreCliente} - Email: {$cliente['email']}");
+        guardarLog($conn, 'delete', 'Cliente eliminado permanentemente', "ID: {$id} - Nombre: {$cliente['nombre']} - Email: {$cliente['email']}");
         
-        echo json_encode(['success' => true, 'message' => "Cliente '{$nombreCliente}' eliminado permanentemente de la base de datos"]);
+        echo json_encode(['success' => true, 'message' => "Cliente '{$cliente['nombre']}' eliminado permanentemente"]);
         
     } catch (Exception $e) {
         $conn->rollback();
@@ -420,6 +456,32 @@ if ($method === 'DELETE' && isset($_GET['action']) && $_GET['action'] === 'masco
         echo json_encode(['success' => false, 'error' => $stmt->error]);
     }
     $stmt->close();
+    exit;
+}
+
+// ============================================
+// GET - Verificar si un cliente existe (para debug)
+// ============================================
+if ($method === 'GET' && isset($_GET['action']) && $_GET['action'] === 'verificar') {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'ID requerido']);
+        exit;
+    }
+    
+    $stmt = $conn->prepare("SELECT id, nombre, email, telefono, puntos, activo FROM usuarios WHERE id = ? AND rol = 'client'");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $cliente = $result->fetch_assoc();
+    $stmt->close();
+    
+    if ($cliente) {
+        echo json_encode(['success' => true, 'cliente' => $cliente]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Cliente no encontrado']);
+    }
     exit;
 }
 

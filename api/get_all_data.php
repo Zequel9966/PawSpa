@@ -12,36 +12,35 @@ $data = [];
 $result = $conn->query("SELECT * FROM productos WHERE activo = 1");
 $data['productos'] = $result->fetch_all(MYSQLI_ASSOC);
 
-// 2. Clientes - VERSIÓN CORREGIDA CON MÁS DATOS
-$sql = "SELECT id, nombre, email, telefono, puntos, fecha_registro 
-        FROM usuarios 
-        WHERE rol = 'client' AND activo = 1 
-        ORDER BY id DESC";
+// En get_all_data.php - Modificar la sección de clientes
+$sql = "SELECT u.id as usuario_id, u.nombre, u.email, u.telefono, u.puntos, u.fecha_registro,
+               c.id as cliente_id, c.direccion
+        FROM usuarios u 
+        LEFT JOIN clientes c ON u.id = c.usuario_id
+        WHERE u.rol = 'client' AND u.activo = 1 
+        ORDER BY u.id DESC";
 $result = $conn->query($sql);
 
 $clientes = [];
 while ($row = $result->fetch_assoc()) {
     // Contar mascotas del cliente
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM mascotas WHERE cliente_id = ?");
-    $stmt->bind_param("i", $row['id']);
+    $stmt->bind_param("i", $row['usuario_id']);
     $stmt->execute();
     $mascotas = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     
-    // Determinar nivel según puntos
-    $nivel = 'Bronze';
-    if ($row['puntos'] >= 1000) $nivel = 'Gold';
-    elseif ($row['puntos'] >= 500) $nivel = 'Silver';
-    
     $clientes[] = [
-        'id' => $row['id'],
+        'id' => $row['usuario_id'],  // ← USAR usuario_id como ID principal
+        'cliente_table_id' => $row['cliente_id'],  // Guardar también el ID de clientes
         'nombre' => $row['nombre'],
         'email' => $row['email'],
         'telefono' => $row['telefono'] ?? '',
         'puntos' => $row['puntos'] ?? 0,
         'total_mascotas' => $mascotas['total'] ?? 0,
         'ultima_visita' => $row['fecha_registro'] ?? 'Nunca',
-        'nivel' => $nivel
+        'nivel' => $row['puntos'] >= 1000 ? 'Gold' : ($row['puntos'] >= 500 ? 'Silver' : 'Bronze'),
+        'direccion' => $row['direccion'] ?? ''
     ];
 }
 $data['clientes'] = $clientes;

@@ -428,6 +428,28 @@ tr:hover td { background: var(--cream); }
 .password-strength.weak { color: var(--rust); }
 .password-strength.medium { color: var(--gold); }
 .password-strength.strong { color: #2EA87A; }
+
+/* Estilos para modales de edición */
+#editClienteInfo, #editMascotaInfo {
+    animation: fadeIn 0.3s ease;
+}
+
+.edit-info-icon {
+    font-size: 1.2rem;
+    margin-right: 8px;
+}
+
+.edit-info-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px dashed rgba(0,0,0,0.05);
+}
+
+.edit-info-row:last-child {
+    border-bottom: none;
+}
 </style>
 </head>
 <body>
@@ -1098,23 +1120,40 @@ tr:hover td { background: var(--cream); }
 <!-- Modal Editar Cliente -->
 <div class="modal-overlay hidden" id="modalEditCliente">
   <div class="modal">
-    <div class="modal-header"><h3 class="modal-title">✏️ Editar Cliente</h3><button class="modal-close" onclick="closeModal('modalEditCliente')">×</button></div>
-    <input type="hidden" id="editCliId">
-    <div class="form-row">
-      <div class="form-col input-group"><label>Nombre completo</label><input type="text" id="editCliNombre"></div>
-      <div class="form-col input-group"><label>Teléfono</label><input type="tel" id="editCliTel"></div>
+    <div class="modal-header">
+      <h3 class="modal-title">✏️ Editar Cliente</h3>
+      <button class="modal-close" onclick="closeModal('modalEditCliente')">×</button>
     </div>
-    <div class="input-group"><label>Email</label><input type="email" id="editCliEmail"></div>
-    <div class="input-group"><label>Nivel</label>
+    <input type="hidden" id="editCliId">
+    
+    <!-- === CONTENEDOR DE INFORMACIÓN DEL CLIENTE === -->
+    <div id="editClienteInfo"></div>
+    
+    <div class="form-row">
+      <div class="form-col input-group">
+        <label>Nombre completo *</label>
+        <input type="text" id="editCliNombre" placeholder="Ej: Ana Torres">
+      </div>
+      <div class="form-col input-group">
+        <label>Teléfono</label>
+        <input type="tel" id="editCliTel" placeholder="7XXXXXXX">
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Email *</label>
+      <input type="email" id="editCliEmail" placeholder="cliente@email.com">
+    </div>
+    <div class="input-group">
+      <label>Nivel / Categoría</label>
       <select id="editCliNivel">
-        <option value="Bronze">🥉 Bronze</option>
-        <option value="Silver">🥈 Silver</option>
-        <option value="Gold">⭐ Gold</option>
+        <option value="Bronze">🥉 Bronze (0-499 puntos)</option>
+        <option value="Silver">🥈 Silver (500-999 puntos)</option>
+        <option value="Gold">⭐ Gold (1000+ puntos)</option>
       </select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalEditCliente')">Cancelar</button>
-      <button class="btn btn-teal" onclick="updateCliente()">💾 Actualizar</button>
+      <button class="btn btn-teal" onclick="updateCliente()">💾 Guardar Cambios</button>
     </div>
   </div>
 </div>
@@ -1143,28 +1182,59 @@ tr:hover td { background: var(--cream); }
   </div>
 </div>
 
+<!-- Modal Editar Mascota -->
 <div class="modal-overlay hidden" id="modalEditMascota">
   <div class="modal">
-    <div class="modal-header"><h3 class="modal-title">✏️ Editar Mascota</h3><button class="modal-close" onclick="closeModal('modalEditMascota')">×</button></div>
+    <div class="modal-header">
+      <h3 class="modal-title">✏️ Editar Mascota</h3>
+      <button class="modal-close" onclick="closeModal('modalEditMascota')">×</button>
+    </div>
     <input type="hidden" id="editMascotaId">
+    
+    <!-- === CONTENEDOR DE INFORMACIÓN DE LA MASCOTA === -->
+    <div id="editMascotaInfo"></div>
+    
     <div class="form-row">
-      <div class="form-col input-group"><label>Nombre</label><input type="text" id="editMascotaNombre" placeholder="Ej: Luna"></div>
-      <div class="form-col input-group"><label>Especie</label>
-        <select id="editMascotaEspecie"><option value="perro">Perro</option><option value="gato">Gato</option><option value="otro">Otro</option></select>
+      <div class="form-col input-group">
+        <label>Nombre *</label>
+        <input type="text" id="editMascotaNombre" placeholder="Ej: Luna">
+      </div>
+      <div class="form-col input-group">
+        <label>Especie</label>
+        <select id="editMascotaEspecie">
+          <option value="perro">🐕 Perro</option>
+          <option value="gato">🐈 Gato</option>
+          <option value="otro">🐾 Otro</option>
+        </select>
       </div>
     </div>
     <div class="form-row">
-      <div class="form-col input-group"><label>Raza</label><input type="text" id="editMascotaRaza" placeholder="Ej: Labrador"></div>
-      <div class="form-col input-group"><label>Dueño</label><input type="text" id="editMascotaDuenio" placeholder="Nombre del cliente"></div>
+      <div class="form-col input-group">
+        <label>Raza</label>
+        <input type="text" id="editMascotaRaza" placeholder="Ej: Labrador">
+      </div>
+      <div class="form-col input-group">
+        <label>Dueño</label>
+        <input type="text" id="editMascotaDuenio" placeholder="Nombre del cliente">
+      </div>
     </div>
     <div class="form-row">
-      <div class="form-col input-group"><label>Edad (años)</label><input type="number" id="editMascotaEdad"></div>
-      <div class="form-col input-group"><label>Peso (kg)</label><input type="number" id="editMascotaPeso" step="0.1"></div>
+      <div class="form-col input-group">
+        <label>Edad (años)</label>
+        <input type="number" id="editMascotaEdad" step="1" min="0">
+      </div>
+      <div class="form-col input-group">
+        <label>Peso (kg)</label>
+        <input type="number" id="editMascotaPeso" step="0.1" min="0">
+      </div>
     </div>
-    <div class="input-group"><label>Alergias / Restricciones</label><textarea id="editMascotaAlergias" rows="2"></textarea></div>
+    <div class="input-group">
+      <label>Alergias / Restricciones</label>
+      <textarea id="editMascotaAlergias" rows="2" placeholder="Ej: Alérgico al polvo, problemas de cadera..."></textarea>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalEditMascota')">Cancelar</button>
-      <button class="btn btn-teal" onclick="updateMascotaBD()">💾 Actualizar</button>
+      <button class="btn btn-teal" onclick="updateMascotaBD()">💾 Guardar Cambios</button>
     </div>
   </div>
 </div>
@@ -1438,11 +1508,13 @@ async function guardarClienteBD() {
     }
 }
 
-// Abrir modal de edición
-async function openEditClienteBD(id) {
-    // Buscar el cliente en DB.clientes (que ya está cargado)
+// Abrir modal de edición (para admin)
+async function openEditCliente(id) {
     const cliente = DB.clientes.find(c => c.id === id);
-    if (!cliente) return;
+    if (!cliente) {
+        showToast('Cliente no encontrado', 'error');
+        return;
+    }
     
     document.getElementById('editCliId').value = cliente.id;
     document.getElementById('editCliNombre').value = cliente.nombre;
@@ -1450,11 +1522,27 @@ async function openEditClienteBD(id) {
     document.getElementById('editCliEmail').value = cliente.email;
     document.getElementById('editCliNivel').value = cliente.nivel || 'Bronze';
     
+    // Información del cliente
+    const infoDiv = document.getElementById('editClienteInfo');
+    if (infoDiv) {
+        infoDiv.innerHTML = `
+            <div style="background: #E8F5F2; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+                <table style="width:100%; font-size:0.85rem;">
+                    <tr><td style="padding:4px"><strong>🆔 ID:</strong></td><td>${cliente.id}</td></tr>
+                    <tr><td style="padding:4px"><strong>🐾 Mascotas:</strong></td><td>${cliente.total_mascotas || 0}</td></tr>
+                    <tr><td style="padding:4px"><strong>⭐ Nivel actual:</strong></td><td>${cliente.nivel || 'Bronze'}</td></tr>
+                    <tr><td style="padding:4px"><strong>📧 Email:</strong></td><td>${cliente.email}</td></tr>
+                    <tr><td style="padding:4px"><strong>📱 Teléfono:</strong></td><td>${cliente.telefono || 'No registrado'}</td></tr>
+                </table>
+            </div>
+        `;
+    }
+    
     openModal('modalEditCliente');
 }
 
-// Actualizar cliente en BD
-async function updateClienteBD() {
+// Actualizar cliente en BD con confirmación
+async function updateCliente() {
     const id = parseInt(document.getElementById('editCliId').value);
     const nombre = document.getElementById('editCliNombre').value.trim();
     const telefono = document.getElementById('editCliTel').value.trim();
@@ -1462,13 +1550,25 @@ async function updateClienteBD() {
     const nivel = document.getElementById('editCliNivel').value;
     
     if (!nombre || !email) {
-        showToast('Nombre y email son requeridos', 'error');
+        showToast('❌ Nombre y email son requeridos', 'error');
+        return;
+    }
+    
+    // Mostrar confirmación con los datos a modificar
+    const confirmMessage = `¿Confirmas los cambios?\n\n` +
+        `Cliente: ${nombre}\n` +
+        `Email: ${email}\n` +
+        `Teléfono: ${telefono || 'No especificado'}\n` +
+        `Nivel: ${nivel}`;
+    
+    if (!confirm(confirmMessage)) {
+        showToast('❌ Edición cancelada', 'info');
         return;
     }
     
     const btn = document.querySelector('#modalEditCliente .btn-teal');
     const originalText = btn.textContent;
-    btn.textContent = '⏳ Actualizando...';
+    btn.textContent = '⏳ Guardando...';
     btn.disabled = true;
     
     try {
@@ -1479,40 +1579,61 @@ async function updateClienteBD() {
         });
         
         const data = await response.json();
+        console.log('Respuesta del servidor:', data);
         
         if (data.success) {
             showToast('✅ Cliente actualizado correctamente', 'success');
             closeModal('modalEditCliente');
-            await cargarDatosDesdeBD(); // Recargar todos los datos
+            
+            // Recargar datos para ver los cambios
+            await cargarClientes();
+            await cargarDatosDesdeBD();
+            
+            // Limpiar formulario
+            document.getElementById('editCliId').value = '';
+            document.getElementById('editCliNombre').value = '';
+            document.getElementById('editCliTel').value = '';
+            document.getElementById('editCliEmail').value = '';
+            
+            // Mostrar notificación con los cambios realizados
+            showToast(`📝 Cambios guardados: ${nombre} - Nivel ${nivel}`, 'success');
         } else {
-            showToast(data.error || 'Error al actualizar', 'error');
+            showToast('❌ Error: ' + (data.error || 'No se pudo actualizar'), 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showToast('Error de conexión', 'error');
+        showToast('❌ Error de conexión: ' + error.message, 'error');
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;
     }
 }
 
-// Eliminar cliente de BD
+// Eliminar cliente de BD (VERSIÓN CORREGIDA)
 async function deleteClienteBD(id) {
-    const cliente = DB.clientes.find(c => c.id === id);
+    const idNumber = parseInt(id);
+    const cliente = DB.clientes.find(c => parseInt(c.id) === idNumber);
+    
+    if (!cliente) {
+        showToast('Cliente no encontrado', 'error');
+        return;
+    }
+    
     if (!confirm(`¿Eliminar al cliente "${cliente?.nombre}"? Esta acción no se puede deshacer.`)) return;
     
     try {
         const response = await fetch(API_URL + 'clientes.php', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
+            body: JSON.stringify({ id: idNumber })
         });
         
         const data = await response.json();
         
         if (data.success) {
             showToast('✅ Cliente eliminado correctamente', 'success');
-            await cargarDatosDesdeBD(); // Recargar todos los datos
+            await cargarClientes(); // Recargar lista
+            await cargarDatosDesdeBD();
         } else {
             showToast(data.error || 'Error al eliminar', 'error');
         }
@@ -1994,12 +2115,7 @@ async function cargarClientes() {
 // Renderizar tabla de clientes
 function renderClientes() {
     const tbody = document.getElementById('clientesBody');
-    if (!tbody) {
-        console.log('No se encontró el elemento clientesBody');
-        return;
-    }
-    
-    console.log('Renderizando clientes, cantidad:', DB.clientes?.length);
+    if (!tbody) return;
     
     if (!DB.clientes || DB.clientes.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="loading">No hay clientes registrados</td></tr>';
@@ -2010,6 +2126,9 @@ function renderClientes() {
         const nivelBadge = c.nivel === 'Gold' ? 'badge-teal' : (c.nivel === 'Silver' ? 'badge-orange' : 'badge-gray');
         const nivelEmoji = c.nivel === 'Gold' ? '⭐' : (c.nivel === 'Silver' ? '🥈' : '🥉');
         
+        // Asegurar que el ID se pase como número
+        const clienteId = parseInt(c.id);
+        
         return `<tr>
             <td><strong>${escapeHtml(c.nombre)}</strong></td>
             <td>${c.telefono || '-'}</td>
@@ -2018,8 +2137,8 @@ function renderClientes() {
             <td>${c.ultima_visita || 'Nunca'}</td>
             <td><span class="badge ${nivelBadge}">${nivelEmoji} ${c.nivel || 'Bronze'}</span></td>
             <td style="display:flex; gap:4px">
-                <button class="btn btn-sm btn-outline" onclick="openEditClienteBD(${c.id})">✏️ Editar</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteClienteBD(${c.id})">🗑️ Eliminar</button>
+                <button class="btn btn-sm btn-outline" onclick="openEditClienteBD(${clienteId})">✏️ Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteClienteBD(${clienteId})">🗑️ Eliminar</button>
             </td>
         </tr>`;
     }).join('');
@@ -2070,21 +2189,58 @@ async function guardarCliente() {
     }
 }
 
-// Abrir modal de edición
-async function openEditCliente(id) {
-    const cliente = DB.clientes.find(c => c.id === id);
-    if (!cliente) return;
+// Abrir modal de edición de cliente (VERSIÓN CORREGIDA - CON PARSEO DE TIPO)
+function openEditClienteBD(id) {
+    // Convertir el ID recibido a número para comparación
+    const idNumber = parseInt(id);
+    console.log('🔍 Buscando cliente con ID:', idNumber);
+    console.log('📋 Tipo de ID recibido:', typeof id);
+    console.log('📋 Tipo de ID convertido:', typeof idNumber);
     
+    // Buscar el cliente comparando como números
+    const cliente = DB.clientes.find(c => parseInt(c.id) === idNumber);
+    
+    if (!cliente) {
+        console.error('❌ Cliente no encontrado con ID:', idNumber);
+        console.log('📋 Lista de clientes disponibles:', DB.clientes.map(c => ({ id: c.id, tipo: typeof c.id, nombre: c.nombre })));
+        showToast(`❌ Cliente no encontrado. ID: ${idNumber}`, 'error');
+        return;
+    }
+    
+    console.log('✅ Cliente encontrado:', cliente);
+    
+    // Limpiar información previa
+    const infoContainer = document.getElementById('editClienteInfo');
+    if (infoContainer) {
+        infoContainer.innerHTML = '';
+    }
+    
+    // Llenar el formulario del modal
     document.getElementById('editCliId').value = cliente.id;
     document.getElementById('editCliNombre').value = cliente.nombre;
     document.getElementById('editCliTel').value = cliente.telefono || '';
     document.getElementById('editCliEmail').value = cliente.email;
     document.getElementById('editCliNivel').value = cliente.nivel || 'Bronze';
     
+    // Mostrar información adicional
+    if (infoContainer) {
+        infoContainer.innerHTML = `
+            <div style="background: var(--teal-pale); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+                    <div><strong>🆔 ID Usuario:</strong> ${cliente.id}</div>
+                    <div><strong>🐾 Mascotas:</strong> ${cliente.total_mascotas || 0}</div>
+                    <div><strong>⭐ Nivel:</strong> ${cliente.nivel || 'Bronze'}</div>
+                    <div><strong>📧 Email:</strong> ${escapeHtml(cliente.email)}</div>
+                    ${cliente.direccion ? `<div><strong>📍 Dirección:</strong> ${escapeHtml(cliente.direccion)}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
     openModal('modalEditCliente');
+    showToast(`✏️ Editando: ${cliente.nombre}`, 'info');
 }
 
-// Actualizar cliente en BD
 async function updateCliente() {
     const id = parseInt(document.getElementById('editCliId').value);
     const nombre = document.getElementById('editCliNombre').value.trim();
@@ -2093,20 +2249,32 @@ async function updateCliente() {
     const nivel = document.getElementById('editCliNivel').value;
     
     if (!nombre || !email) {
-        showToast('Nombre y email son requeridos', 'error');
+        showToast('❌ Nombre y email son requeridos', 'error');
+        return;
+    }
+    
+    if (!confirm(`¿Guardar cambios?\n\nCliente: ${nombre}\nEmail: ${email}\nNivel: ${nivel}`)) {
+        showToast('❌ Edición cancelada', 'info');
         return;
     }
     
     const btn = document.querySelector('#modalEditCliente .btn-teal');
     const originalText = btn.textContent;
-    btn.textContent = '⏳ Actualizando...';
+    btn.textContent = '⏳ Guardando...';
     btn.disabled = true;
     
     try {
+        // CAMBIAR: Quitar ?action=usuario de la URL
         const response = await fetch(API_URL + 'clientes.php', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, nombre, telefono, email, nivel })
+            body: JSON.stringify({ 
+                id: id,           // ← Cambiar de usuario_id a id
+                nombre: nombre, 
+                telefono: telefono, 
+                email: email,
+                nivel: nivel 
+            })
         });
         
         const data = await response.json();
@@ -2114,13 +2282,14 @@ async function updateCliente() {
         if (data.success) {
             showToast('✅ Cliente actualizado correctamente', 'success');
             closeModal('modalEditCliente');
-            await cargarClientes(); // Recargar lista
+            await cargarClientes();
+            await cargarDatosDesdeBD();
         } else {
-            showToast(data.error || 'Error al actualizar', 'error');
+            showToast('❌ Error: ' + (data.error || 'No se pudo actualizar'), 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showToast('Error de conexión', 'error');
+        showToast('❌ Error de conexión: ' + error.message, 'error');
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;
@@ -2276,23 +2445,60 @@ async function guardarMascotaBD() {
 }
 
 // Abrir modal para editar mascota
-async function openEditMascota(id) {
-    const mascota = DB.mascotas.find(m => m.id === id);
-    if (!mascota) return;
+function openEditMascota(id) {
+    console.log('Abriendo edición para mascota ID:', id);
     
+    const mascota = DB.mascotas.find(m => m.id === id);
+    if (!mascota) {
+        showToast('❌ Mascota no encontrada', 'error');
+        console.error('Mascota no encontrada con ID:', id);
+        return;
+    }
+    
+    // Buscar el cliente dueño
+    const duenio = DB.clientes.find(c => c.id === mascota.cliente_id);
+    
+    console.log('Mascota encontrada:', mascota);
+    
+    // Limpiar información previa
+    const infoContainer = document.getElementById('editMascotaInfo');
+    if (infoContainer) {
+        infoContainer.innerHTML = '';
+    }
+    
+    // Llenar el formulario
     document.getElementById('editMascotaId').value = mascota.id;
     document.getElementById('editMascotaNombre').value = mascota.nombre;
     document.getElementById('editMascotaEspecie').value = mascota.especie || 'perro';
     document.getElementById('editMascotaRaza').value = mascota.raza || '';
-    document.getElementById('editMascotaDuenio').value = mascota.duenio_nombre || '';
+    document.getElementById('editMascotaDuenio').value = duenio ? duenio.nombre : '';
     document.getElementById('editMascotaEdad').value = mascota.edad || '';
     document.getElementById('editMascotaPeso').value = mascota.peso || '';
     document.getElementById('editMascotaAlergias').value = mascota.alergias || '';
     
+    // Mostrar información adicional
+    if (infoContainer) {
+        const especieIcon = mascota.especie === 'perro' ? '🐕' : (mascota.especie === 'gato' ? '🐈' : '🐾');
+        infoContainer.innerHTML = `
+            <div style="background: linear-gradient(135deg, var(--teal-pale), var(--cream)); padding: 14px; border-radius: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div style="font-size: 2rem;">${especieIcon}</div>
+                    <div>
+                        <div><strong>🆔 ID Mascota:</strong> ${mascota.id}</div>
+                        <div><strong>👤 Dueño:</strong> ${duenio ? duenio.nombre : 'No asignado'}</div>
+                        <div><strong>📅 Edad:</strong> ${mascota.edad || '?'} años</div>
+                        <div><strong>⚖️ Peso:</strong> ${mascota.peso || '?'} kg</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
     openModal('modalEditMascota');
+    showToast(`✏️ Editando mascota: ${mascota.nombre}`, 'info');
 }
 
-// Actualizar mascota en BD
+// Actualizar mascota en BD con confirmación
 async function updateMascotaBD() {
     const id = parseInt(document.getElementById('editMascotaId').value);
     const nombre = document.getElementById('editMascotaNombre').value.trim();
@@ -2301,47 +2507,86 @@ async function updateMascotaBD() {
     const duenio = document.getElementById('editMascotaDuenio').value.trim();
     const edad = parseInt(document.getElementById('editMascotaEdad').value) || 0;
     const peso = parseFloat(document.getElementById('editMascotaPeso').value) || 0;
-    const alergias = document.getElementById('editMascotaAlergias').value;
+    const alergias = document.getElementById('editMascotaAlergias').value.trim();
     
     if (!nombre || !duenio) {
-        showToast('Nombre y dueño son requeridos', 'error');
+        showToast('❌ Nombre y dueño son requeridos', 'error');
         return;
     }
     
-    // Buscar el ID del cliente
+    // Buscar el ID del cliente por nombre
     const cliente = DB.clientes.find(c => c.nombre.toLowerCase() === duenio.toLowerCase());
     if (!cliente) {
-        showToast(`No se encontró el cliente "${duenio}"`, 'error');
+        showToast(`❌ No se encontró el cliente "${duenio}"`, 'error');
+        return;
+    }
+    
+    // Mostrar confirmación
+    const especieEmoji = especie === 'perro' ? '🐕' : (especie === 'gato' ? '🐈' : '🐾');
+    const confirmMessage = `¿Confirmas los cambios?\n\n` +
+        `${especieEmoji} Mascota: ${nombre}\n` +
+        `📋 Especie: ${especie}\n` +
+        `🐕 Raza: ${raza || 'No especificada'}\n` +
+        `👤 Dueño: ${duenio}\n` +
+        `📅 Edad: ${edad} años\n` +
+        `⚖️ Peso: ${peso} kg\n` +
+        `⚠️ Alergias: ${alergias || 'Ninguna'}`;
+    
+    if (!confirm(confirmMessage)) {
+        showToast('❌ Edición cancelada', 'info');
         return;
     }
     
     const btn = document.querySelector('#modalEditMascota .btn-teal');
     const originalText = btn.textContent;
-    btn.textContent = '⏳ Actualizando...';
+    btn.textContent = '⏳ Guardando...';
     btn.disabled = true;
     
     try {
-        const response = await fetch(API_URL + 'clientes.php?action=mascota', {
+        const response = await fetch(API_URL + 'clientes.php?action=mascota_cliente', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                id, nombre, especie, raza, cliente_id: cliente.id,
-                edad, peso, alergias, temperamento: 'tranquilo'
+                mascota_id: id,
+                nombre: nombre,
+                especie: especie,
+                raza: raza,
+                cliente_id: cliente.id,
+                edad: edad,
+                peso: peso,
+                alergias: alergias,
+                temperamento: 'tranquilo',
+                tamanio: 'mediano'
             })
         });
         
         const data = await response.json();
+        console.log('Respuesta del servidor:', data);
         
         if (data.success) {
             showToast('✅ Mascota actualizada correctamente', 'success');
             closeModal('modalEditMascota');
+            
+            // Recargar datos
             await cargarMascotas();
+            await cargarDatosDesdeBD();
+            
+            // Limpiar formulario
+            document.getElementById('editMascotaId').value = '';
+            document.getElementById('editMascotaNombre').value = '';
+            document.getElementById('editMascotaRaza').value = '';
+            document.getElementById('editMascotaDuenio').value = '';
+            document.getElementById('editMascotaEdad').value = '';
+            document.getElementById('editMascotaPeso').value = '';
+            document.getElementById('editMascotaAlergias').value = '';
+            
+            showToast(`📝 Mascota "${nombre}" actualizada correctamente`, 'success');
         } else {
-            showToast(data.error || 'Error al actualizar', 'error');
+            showToast('❌ Error: ' + (data.error || 'No se pudo actualizar'), 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showToast('Error de conexión', 'error');
+        showToast('❌ Error de conexión: ' + error.message, 'error');
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;
