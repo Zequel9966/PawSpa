@@ -1650,117 +1650,139 @@ function saveDB() {
 }
 
 // ============================================
-// LOGS
+// LOGS - VERSIÓN CORREGIDA
 // ============================================
-const LOG_ICONS = { login:'🔐', logout:'🚪', create:'➕', edit:'✏️', delete:'🗑️', error:'❌', pay:'💳', move:'📦' };
-function addLog(type, action, detail, user) {
-  const entry = {
-    id: Date.now(),
-    type,
-    action,
-    detail,
-    user: user || (currentUser ? currentUser.nombre : 'Sistema'),
-    role: currentRole,
-    ts: new Date().toLocaleString('es-BO'),
-  };
-  DB.logs.unshift(entry);
-  if (DB.logs.length > 500) DB.logs = DB.logs.slice(0,500);
-  saveDB();
-  if (document.getElementById('page-logs').classList.contains('active')) renderLogs('all');
-}
+
+let logsFilter = 'all';
 
 async function cargarLogsDesdeBD() {
     try {
         const response = await fetch(API_URL + 'ver_logs.php?format=json');
         const data = await response.json();
         
-        if (data.success) {
+        console.log('📦 Logs recibidos del servidor:', data);
+        
+        if (data.success && data.logs) {
             DB.logs = data.logs;
-            renderLogs(logsFilter);
             console.log('✅ Logs cargados:', DB.logs.length);
+            renderLogs(logsFilter);
+        } else {
+            console.error('Error en respuesta de logs:', data);
+            DB.logs = [];
+            renderLogs(logsFilter);
         }
     } catch (error) {
         console.error('Error cargando logs:', error);
+        DB.logs = [];
+        renderLogs(logsFilter);
     }
 }
 
 function renderLogs(filter) {
     logsFilter = filter;
     const container = document.getElementById('logsContainer');
-    if (!container) return;
+    if (!container) {
+        console.log('❌ logsContainer no encontrado');
+        return;
+    }
     
-    const items = filter === 'all' ? DB.logs : DB.logs.filter(l => l.tipo === filter);
-    document.getElementById('logCount').textContent = `${items.length} registro${items.length !== 1 ? 's' : ''}`;
+    // Filtrar logs según el tipo
+    let items = DB.logs;
+    if (filter !== 'all') {
+        items = DB.logs.filter(l => l.tipo === filter);
+    }
+    
+    const countEl = document.getElementById('logCount');
+    if (countEl) {
+        countEl.textContent = `${items.length} registro${items.length !== 1 ? 's' : ''}`;
+    }
     
     if (!items.length) {
         container.innerHTML = '<p style="color:var(--gray);text-align:center;padding:40px 0">Sin registros para el filtro seleccionado</p>';
         return;
     }
     
-    container.innerHTML = items.map(l => `
-        <div class="log-entry ${l.tipo}">
-            <div class="log-icon">${LOG_ICONS[l.tipo] || '📝'}</div>
-            <div class="log-info">
-                <div class="log-action">${escapeHtml(l.accion)}</div>
-                <div class="log-detail">${escapeHtml(l.detalle)}</div>
+    // Mapa de iconos según el tipo
+    const LOG_ICONS_MAP = {
+        'login': '🔐',
+        'logout': '🚪',
+        'create': '➕',
+        'edit': '✏️',
+        'delete': '🗑️',
+        'error': '❌',
+        'pay': '💳',
+        'move': '📦'
+    };
+    
+    container.innerHTML = items.map(log => {
+        // Asegurar que todas las propiedades existen
+        const tipo = log.tipo || 'info';
+        const accion = log.accion || 'Acción desconocida';
+        const detalle = log.detalle || '';
+        const usuario = log.usuario_nombre || 'Sistema';
+        const rol = log.usuario_rol || '';
+        const fecha = log.fecha || log.ts || new Date().toLocaleString();
+        const icono = LOG_ICONS_MAP[tipo] || '📝';
+        
+        return `
+            <div class="log-entry ${tipo}">
+                <div class="log-icon">${icono}</div>
+                <div class="log-info">
+                    <div class="log-action">${escapeHtml(accion)}</div>
+                    <div class="log-detail">${escapeHtml(detalle)}</div>
+                </div>
+                <div class="log-meta">
+                    <div class="log-user">${escapeHtml(usuario)}</div>
+                    <div>${escapeHtml(rol)}</div>
+                    <div style="margin-top:4px">${escapeHtml(fecha)}</div>
+                </div>
             </div>
-            <div class="log-meta">
-                <div class="log-user">${escapeHtml(l.usuario_nombre || 'Sistema')}</div>
-                <div>${l.usuario_rol || ''}</div>
-                <div style="margin-top:4px">${l.fecha || l.ts}</div>
-            </div>
-        </div>
-    `).join('');
-}
-
-let logsFilter = 'all';
-function renderLogs(filter) {
-  logsFilter = filter;
-  const container = document.getElementById('logsContainer');
-  const items = filter === 'all' ? DB.logs : DB.logs.filter(l => l.type === filter);
-  document.getElementById('logCount').textContent = `${items.length} registro${items.length !== 1 ? 's' : ''}`;
-  if (!items.length) {
-    container.innerHTML = '<p style="color:var(--gray);text-align:center;padding:40px 0">Sin registros para el filtro seleccionado</p>';
-    return;
-  }
-  container.innerHTML = items.map(l => `
-    <div class="log-entry ${l.type}">
-      <div class="log-icon">${LOG_ICONS[l.type] || '📝'}</div>
-      <div class="log-info">
-        <div class="log-action">${l.action}</div>
-        <div class="log-detail">${l.detail}</div>
-      </div>
-      <div class="log-meta">
-        <div class="log-user">${l.user}</div>
-        <div>${l.role || ''}</div>
-        <div style="margin-top:4px">${l.ts}</div>
-      </div>
-    </div>`).join('');
+        `;
+    }).join('');
+    
+    console.log(`✅ Renderizados ${items.length} logs`);
 }
 
 function filterLogs(filter, el) {
-  document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  renderLogs(filter);
+    document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderLogs(filter);
 }
 
 function clearLogs() {
-  if (!confirm('¿Limpiar todos los registros de actividad?')) return;
-  DB.logs = [];
-  saveDB();
-  addLog('edit','Logs limpiados','El administrador limpió el historial de actividad');
-  renderLogs('all');
-  showToast('Logs limpiados ✓','success');
+    if (!confirm('¿Limpiar todos los registros de actividad?')) return;
+    
+    fetch(API_URL + 'limpiar_log.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(() => {
+        DB.logs = [];
+        renderLogs('all');
+        showToast('Logs limpiados ✓', 'success');
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast('Error al limpiar logs', 'error');
+    });
 }
 
 function exportLogs() {
-  const lines = DB.logs.map(l => `[${l.ts}] [${l.type.toUpperCase()}] [${l.user}] ${l.action} — ${l.detail}`).join('\n');
-  const blob = new Blob([lines], {type:'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `pawspa_logs_${new Date().toISOString().slice(0,10)}.txt`;
-  a.click();
-  showToast('Logs exportados ✓','success');
+    if (!DB.logs || DB.logs.length === 0) {
+        showToast('No hay logs para exportar', 'error');
+        return;
+    }
+    
+    const lines = DB.logs.map(l => {
+        return `[${l.fecha}] [${l.tipo?.toUpperCase() || 'INFO'}] [${l.usuario_nombre || 'Sistema'}] ${l.accion || ''} — ${l.detalle || ''}`;
+    }).join('\n');
+    
+    const blob = new Blob([lines], {type: 'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `pawspa_logs_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    showToast('Logs exportados ✓', 'success');
 }
 
 // ============================================
@@ -2350,7 +2372,7 @@ async function cargarMascotas() {
     }
 }
 
-// Renderizar tarjetas de mascotas
+// Renderizar tarjetas de mascotas (VERSIÓN CORREGIDA)
 function renderMascotas() {
     const grid = document.getElementById('mascotasGrid');
     if (!grid) return;
@@ -2362,24 +2384,29 @@ function renderMascotas() {
     
     const emojiMap = { 'perro': '🐕', 'gato': '🐈', 'otro': '🐾' };
     
-    grid.innerHTML = DB.mascotas.map(m => `
-        <div class="pet-card">
-            <div class="pet-avatar">${emojiMap[m.especie?.toLowerCase()] || '🐾'}</div>
-            <div class="pet-info" style="flex:1">
-                <h4>${escapeHtml(m.nombre)}</h4>
-                <p>${escapeHtml(m.raza || 'Sin raza')} · ${m.especie || 'Mascota'} · ${m.edad || '?'} años · ${m.peso || '?'} kg</p>
-                <div class="pet-tags">
-                    ${m.alergias ? `<span class="badge badge-red">⚠️ ${escapeHtml(m.alergias)}</span>` : ''}
-                    <span class="badge badge-blue">💉 Al día</span>
+    grid.innerHTML = DB.mascotas.map(m => {
+        // Asegurar que el ID se pase como número
+        const mascotaId = parseInt(m.id);
+        
+        return `
+            <div class="pet-card">
+                <div class="pet-avatar">${emojiMap[m.especie?.toLowerCase()] || '🐾'}</div>
+                <div class="pet-info" style="flex:1">
+                    <h4>${escapeHtml(m.nombre)}</h4>
+                    <p>${escapeHtml(m.raza || 'Sin raza')} · ${m.especie || 'Mascota'} · ${m.edad || '?'} años · ${m.peso || '?'} kg</p>
+                    <div class="pet-tags">
+                        ${m.alergias ? `<span class="badge badge-red">⚠️ ${escapeHtml(m.alergias)}</span>` : ''}
+                        <span class="badge badge-blue">💉 Al día</span>
+                    </div>
+                    <div style="margin-top:8px; font-size:.8rem; color:var(--gray)">Dueño: ${escapeHtml(m.duenio_nombre || 'Sin dueño')}</div>
                 </div>
-                <div style="margin-top:8px; font-size:.8rem; color:var(--gray)">Dueño: ${escapeHtml(m.duenio_nombre || 'Sin dueño')}</div>
+                <div class="pet-actions" style="display:flex; gap:5px">
+                    <button class="btn btn-sm btn-outline" onclick="openEditMascota(${mascotaId})">✏️</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteMascotaBD(${mascotaId})">🗑️</button>
+                </div>
             </div>
-            <div class="pet-actions" style="display:flex; gap:5px">
-                <button class="btn btn-sm btn-outline" onclick="openEditMascota(${m.id})">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteMascotaBD(${m.id})">🗑️</button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Guardar nueva mascota en BD
@@ -2444,21 +2471,25 @@ async function guardarMascotaBD() {
     }
 }
 
-// Abrir modal para editar mascota
+// Abrir modal para editar mascota (VERSIÓN CORREGIDA)
 function openEditMascota(id) {
-    console.log('Abriendo edición para mascota ID:', id);
+    // Convertir a número para comparación correcta
+    const idNumber = parseInt(id);
+    console.log('🔍 Abriendo edición para mascota ID:', idNumber);
     
-    const mascota = DB.mascotas.find(m => m.id === id);
+    const mascota = DB.mascotas.find(m => parseInt(m.id) === idNumber);
+    
     if (!mascota) {
+        console.error('❌ Mascota no encontrada con ID:', idNumber);
+        console.log('📋 Mascotas disponibles:', DB.mascotas.map(m => ({ id: m.id, nombre: m.nombre })));
         showToast('❌ Mascota no encontrada', 'error');
-        console.error('Mascota no encontrada con ID:', id);
         return;
     }
     
-    // Buscar el cliente dueño
-    const duenio = DB.clientes.find(c => c.id === mascota.cliente_id);
+    console.log('✅ Mascota encontrada:', mascota);
     
-    console.log('Mascota encontrada:', mascota);
+    // Buscar el cliente dueño
+    const duenio = DB.clientes.find(c => parseInt(c.id) === parseInt(mascota.cliente_id));
     
     // Limpiar información previa
     const infoContainer = document.getElementById('editMascotaInfo');
@@ -2498,7 +2529,7 @@ function openEditMascota(id) {
     showToast(`✏️ Editando mascota: ${mascota.nombre}`, 'info');
 }
 
-// Actualizar mascota en BD con confirmación
+// Actualizar mascota usando el nuevo endpoint mascotas.php
 async function updateMascotaBD() {
     const id = parseInt(document.getElementById('editMascotaId').value);
     const nombre = document.getElementById('editMascotaNombre').value.trim();
@@ -2508,6 +2539,8 @@ async function updateMascotaBD() {
     const edad = parseInt(document.getElementById('editMascotaEdad').value) || 0;
     const peso = parseFloat(document.getElementById('editMascotaPeso').value) || 0;
     const alergias = document.getElementById('editMascotaAlergias').value.trim();
+    
+    console.log('📤 Actualizando mascota:', { id, nombre, especie, raza, duenio, edad, peso, alergias });
     
     if (!nombre || !duenio) {
         showToast('❌ Nombre y dueño son requeridos', 'error');
@@ -2543,25 +2576,26 @@ async function updateMascotaBD() {
     btn.disabled = true;
     
     try {
-        const response = await fetch(API_URL + 'clientes.php?action=mascota_cliente', {
+        // USAR EL NUEVO ENDPOINT mascotas.php
+        const response = await fetch(API_URL + 'mascotas.php', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                mascota_id: id,
+                id: id,                    // El endpoint acepta 'id'
                 nombre: nombre,
                 especie: especie,
                 raza: raza,
-                cliente_id: cliente.id,
+                cliente_id: parseInt(cliente.id),
                 edad: edad,
                 peso: peso,
                 alergias: alergias,
-                temperamento: 'tranquilo',
-                tamanio: 'mediano'
+                tamanio: 'mediano',
+                temperamento: 'tranquilo'
             })
         });
         
         const data = await response.json();
-        console.log('Respuesta del servidor:', data);
+        console.log('📦 Respuesta del servidor:', data);
         
         if (data.success) {
             showToast('✅ Mascota actualizada correctamente', 'success');
@@ -2570,6 +2604,9 @@ async function updateMascotaBD() {
             // Recargar datos
             await cargarMascotas();
             await cargarDatosDesdeBD();
+            if (typeof cargarMascotasCliente === 'function') {
+                await cargarMascotasCliente();
+            }
             
             // Limpiar formulario
             document.getElementById('editMascotaId').value = '';
@@ -2585,7 +2622,7 @@ async function updateMascotaBD() {
             showToast('❌ Error: ' + (data.error || 'No se pudo actualizar'), 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error:', error);
         showToast('❌ Error de conexión: ' + error.message, 'error');
     } finally {
         btn.textContent = originalText;
@@ -2593,16 +2630,23 @@ async function updateMascotaBD() {
     }
 }
 
-// Eliminar mascota de BD
+// Eliminar mascota de BD (VERSIÓN CORREGIDA)
 async function deleteMascotaBD(id) {
-    const mascota = DB.mascotas.find(m => m.id === id);
+    const idNumber = parseInt(id);
+    const mascota = DB.mascotas.find(m => parseInt(m.id) === idNumber);
+    
+    if (!mascota) {
+        showToast('❌ Mascota no encontrada', 'error');
+        return;
+    }
+    
     if (!confirm(`¿Eliminar la mascota "${mascota?.nombre}"?`)) return;
     
     try {
-        const response = await fetch(API_URL + 'clientes.php?action=mascota', {
+        const response = await fetch(API_URL + 'clientes.php?action=mascota_cliente', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
+            body: JSON.stringify({ mascota_id: idNumber })
         });
         
         const data = await response.json();
@@ -2610,6 +2654,7 @@ async function deleteMascotaBD(id) {
         if (data.success) {
             showToast('✅ Mascota eliminada correctamente', 'success');
             await cargarMascotas();
+            await cargarDatosDesdeBD();
         } else {
             showToast(data.error || 'Error al eliminar', 'error');
         }
@@ -2618,6 +2663,7 @@ async function deleteMascotaBD(id) {
         showToast('Error de conexión', 'error');
     }
 }
+
 // ============================================
 // CITAS CRUD
 // ============================================

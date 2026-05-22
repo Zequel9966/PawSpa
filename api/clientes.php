@@ -224,6 +224,41 @@ if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'mascota
     exit;
 }
 
+
+// ============================================
+// PUT - Actualizar mascota (CORREGIDO)
+// ============================================
+if ($method === 'PUT' && isset($_GET['action']) && $_GET['action'] === 'mascota_cliente') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    
+    $mascota_id = intval($data['mascota_id'] ?? 0);  // ← Espera mascota_id
+    $nombre = trim($data['nombre'] ?? '');
+    $especie = $data['especie'] ?? 'perro';
+    $raza = trim($data['raza'] ?? '');
+    $tamanio = $data['tamanio'] ?? 'mediano';
+    $edad = intval($data['edad'] ?? 0);
+    $peso = floatval($data['peso'] ?? 0);
+    $alergias = trim($data['alergias'] ?? '');
+    $temperamento = $data['temperamento'] ?? 'tranquilo';
+    
+    if ($mascota_id <= 0 || empty($nombre)) {
+        echo json_encode(['success' => false, 'error' => 'Datos inválidos: mascota_id y nombre son requeridos']);
+        exit;
+    }
+    
+    $stmt = $conn->prepare("UPDATE mascotas SET nombre = ?, especie = ?, raza = ?, tamanio = ?, edad = ?, peso = ?, alergias = ?, temperamento = ? WHERE id = ?");
+    $stmt->bind_param("sssssiiss", $nombre, $especie, $raza, $tamanio, $edad, $peso, $alergias, $temperamento, $mascota_id);
+    
+    if ($stmt->execute()) {
+        guardarLog($conn, 'edit', 'Mascota actualizada', "ID: {$mascota_id} - {$nombre}");
+        echo json_encode(['success' => true, 'message' => 'Mascota actualizada correctamente']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+    $stmt->close();
+    exit;
+}
+
 // ============================================
 // PUT - Actualizar cliente (CORREGIDO)
 // ============================================
@@ -294,39 +329,6 @@ if ($method === 'PUT') {
     exit;
 }
 
-// ============================================
-// PUT - Actualizar mascota
-// ============================================
-if ($method === 'PUT' && isset($_GET['action']) && $_GET['action'] === 'mascota_cliente') {
-    $data = json_decode(file_get_contents('php://input'), true);
-    
-    $mascota_id = intval($data['mascota_id'] ?? 0);
-    $nombre = trim($data['nombre'] ?? '');
-    $especie = $data['especie'] ?? 'perro';
-    $raza = trim($data['raza'] ?? '');
-    $tamanio = $data['tamanio'] ?? 'mediano';
-    $edad = intval($data['edad'] ?? 0);
-    $peso = floatval($data['peso'] ?? 0);
-    $alergias = trim($data['alergias'] ?? '');
-    $temperamento = $data['temperamento'] ?? 'tranquilo';
-    
-    if ($mascota_id <= 0 || empty($nombre)) {
-        echo json_encode(['success' => false, 'error' => 'Datos inválidos']);
-        exit;
-    }
-    
-    $stmt = $conn->prepare("UPDATE mascotas SET nombre = ?, especie = ?, raza = ?, tamanio = ?, edad = ?, peso = ?, alergias = ?, temperamento = ? WHERE id = ?");
-    $stmt->bind_param("sssssiiss", $nombre, $especie, $raza, $tamanio, $edad, $peso, $alergias, $temperamento, $mascota_id);
-    
-    if ($stmt->execute()) {
-        guardarLog($conn, 'edit', 'Mascota actualizada', "ID: {$mascota_id} - {$nombre}");
-        echo json_encode(['success' => true, 'message' => 'Mascota actualizada correctamente']);
-    } else {
-        echo json_encode(['success' => false, 'error' => $stmt->error]);
-    }
-    $stmt->close();
-    exit;
-}
 
 // ============================================
 // DELETE - Eliminar cliente FÍSICAMENTE
