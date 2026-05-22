@@ -26,6 +26,16 @@ function guardarLog($conn, $tipo, $accion, $detalle) {
     $stmt->close();
 }
 
+function hasRole($roles) {
+    if (!isset($_SESSION['user'])) return false;
+    
+    $userRole = $_SESSION['user']['rol'];
+    if (is_array($roles)) {
+        return in_array($userRole, $roles);
+    }
+    return $userRole === $roles;
+}
+
 // ============================================
 // GET - Obtener clientes
 // ============================================
@@ -282,7 +292,7 @@ if ($method === 'PUT' && isset($_GET['action']) && $_GET['action'] === 'mascota_
 }
 
 // ============================================
-// DELETE - Eliminar cliente (soft delete)
+// DELETE - Eliminar cliente FÍSICAMENTE (con cascada)
 // ============================================
 if ($method === 'DELETE' && !isset($_GET['action'])) {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -293,25 +303,88 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
         exit;
     }
     
-    // Obtener nombre del cliente antes de eliminar
-    $stmtNombre = $conn->prepare("SELECT nombre, email FROM usuarios WHERE id = ?");
+    // Verificar que solo admin pueda eliminar
+    if (!hasRole(['admin'])) {
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para eliminar clientes']);
+        exit;
+    }
+    
+    // Obtener datos del cliente antes de eliminar
+    $stmtNombre = $conn->prepare("SELECT nombre, email FROM usuarios WHERE id = ? AND rol = 'client'");
     $stmtNombre->bind_param("i", $id);
     $stmtNombre->execute();
     $cliente = $stmtNombre->get_result()->fetch_assoc();
     $stmtNombre->close();
     
-    // Soft delete - solo desactivar
-    $stmt = $conn->prepare("UPDATE usuarios SET activo = 0 WHERE id = ? AND rol = 'client'");
-    $stmt->bind_param("i", $id);
-    
-    if ($stmt->execute()) {
-        $nombreCliente = $cliente['nombre'] ?? 'Desconocido';
-        guardarLog($conn, 'delete', 'Cliente eliminado', "ID: {$id} - Nombre: {$nombreCliente}");
-        echo json_encode(['success' => true, 'message' => 'Cliente eliminado correctamente']);
-    } else {
-        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    if (!$cliente) {
+        echo json_encode(['success' => false, 'error' => 'Cliente no encontrado']);
+        exit;
     }
+    
+    // Verificar si tiene citas pendientes
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM citas WHERE cliente_id = ? AND fecha >= CURDATE() AND estado NOT IN ('cancelada', 'completada')");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $citas_pendientes = $result->fetch_assoc()['total'];
     $stmt->close();
+    
+    if ($citas_pendientes > 0) {
+        echo json_encode(['success' => false, 'error' => "No se puede eliminar el cliente porque tiene {$citas_pendientes} citas pendientes"]);
+        exit;
+    }
+    
+    // INICIAR TRANSACCIÓN para eliminar todo en cascada
+    $conn->begin_transaction();
+    
+    try {
+        // 1. Eliminar mascotas del cliente
+        $stmt = $conn->prepare("DELETE FROM mascotas WHERE cliente_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 2. Eliminar registros de clientes
+        $stmt = $conn->prepare("DELETE FROM clientes WHERE usuario_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 3. Eliminar notificaciones
+        $stmt = $conn->prepare("DELETE FROM notificaciones WHERE usuario_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 4. Eliminar carrito
+        $stmt = $conn->prepare("DELETE FROM carrito WHERE usuario_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 5. Eliminar tokens enviados
+        $stmt = $conn->prepare("DELETE FROM tokens_enviados WHERE usuario_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+        
+        // 6. Finalmente eliminar el usuario
+        $stmt = $conn->prepare("DELETE FROM usuarios WHERE id = ? AND rol = 'client'");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+        
+        $conn->commit();
+        
+        $nombreCliente = $cliente['nombre'];
+        guardarLog($conn, 'delete', 'Cliente eliminado permanentemente', "ID: {$id} - Nombre: {$nombreCliente} - Email: {$cliente['email']}");
+        
+        echo json_encode(['success' => true, 'message' => "Cliente '{$nombreCliente}' eliminado permanentemente de la base de datos"]);
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['success' => false, 'error' => 'Error al eliminar: ' . $e->getMessage()]);
+    }
     exit;
 }
 

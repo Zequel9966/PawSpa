@@ -60,3 +60,6 @@
 [2026-05-20 20:07:56] FALLO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | Error: Rol incorrecto. El usuario es client | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
 [2026-05-20 20:08:11] FALLO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | Error: Rol incorrecto. El usuario es client | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
 [2026-05-20 20:08:23] FALLO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | Error: Rol incorrecto. El usuario es client | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-22 16:03:04] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-22 16:05:20] EXITO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-22 16:06:50] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
