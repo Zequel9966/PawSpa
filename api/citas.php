@@ -1,5 +1,37 @@
 <?php
+// Asegurar que la sesión esté iniciada para validar la autenticación
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once 'config.php';
+
+// Función para validar formato de fecha
+function validarFecha($fecha) {
+    if (empty($fecha)) return false;
+    // Formato YYYY-MM-DD
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) return false;
+    // Validar que sea una fecha real
+    $date = DateTime::createFromFormat('Y-m-d', $fecha);
+    return $date && $date->format('Y-m-d') === $fecha;
+}
+
+// Función para validar formato de hora
+function validarHora($hora) {
+    if (empty($hora)) return false;
+    // Aceptar HH:MM:SS o HH:MM
+    if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $hora)) return true;
+    if (preg_match('/^\d{2}:\d{2}$/', $hora)) return true;
+    return false;
+}
+
+// Función para normalizar hora (agregar segundos si faltan)
+function normalizarHora($hora) {
+    if (preg_match('/^\d{2}:\d{2}$/', $hora)) {
+        return $hora . ':00';
+    }
+    return $hora;
+}
 
 // Verificar autenticación
 if (!isset($_SESSION['user'])) {
@@ -19,6 +51,9 @@ switch($method) {
         } elseif (isset($_GET['fecha'])) {
             // Obtener citas por fecha
             getCitasByFecha($conn, $_GET['fecha'], $user);
+        } elseif (isset($_GET['fecha_inicio']) && isset($_GET['fecha_fin'])) {
+            // Obtener citas por rango de fechas
+            getCitasByRango($conn, $_GET['fecha_inicio'], $_GET['fecha_fin'], $user);
         } elseif (isset($_GET['semana']) && isset($_GET['year'])) {
             // Obtener citas de una semana específica
             getCitasBySemana($conn, $_GET['semana'], $_GET['year'], $user);
@@ -54,7 +89,7 @@ switch($method) {
 // ──────────────────────────────────────────────
 
 /**
- * Obtener cita por ID
+ * Obtener cita por ID (CORREGIDO bind_param)
  */
 function getCitaById($conn, $id, $user) {
     $sql = "SELECT c.*, 
@@ -74,11 +109,11 @@ function getCitaById($conn, $id, $user) {
     if ($user['rol'] == 'client') {
         $sql .= " AND c.cliente_id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ii", $id, $user['id']);
+        $stmt->bind_param("ii", $id, $user['id']); // CORREGIDO: antes duplicaba $id
     } elseif ($user['rol'] == 'groo') {
         $sql .= " AND g.usuario_id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ii", $id, $user['id']);
+        $stmt->bind_param("ii", $id, $user['id']); // CORREGIDO: antes duplicaba $id
     } else {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $id);
@@ -90,7 +125,7 @@ function getCitaById($conn, $id, $user) {
     if ($cita = $result->fetch_assoc()) {
         echo json_encode(['success' => true, 'cita' => $cita]);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Cita no encontrada']);
+        echo json_encode(['success' => false, 'error' => 'Cita no encontrada o acceso denegado']);
     }
     $stmt->close();
 }
@@ -139,10 +174,64 @@ function getCitasByFecha($conn, $fecha, $user) {
 }
 
 /**
+ * Obtener citas por rango de fechas (solo fechas válidas)
+ */
+function getCitasByRango($conn, $fecha_inicio, $fecha_fin, $user) {
+    $sql = "SELECT c.*, 
+            u.nombre as cliente_nombre,
+            u.telefono as cliente_telefono,
+            m.nombre as mascota_nombre,
+            m.especie, m.raza,
+            s.nombre as servicio_nombre,
+            s.duracion_min, s.precio_base,
+            gu.nombre as groomer_nombre
+            FROM citas c
+            JOIN usuarios u ON c.cliente_id = u.id
+            JOIN mascotas m ON c.mascota_id = m.id
+            JOIN servicios s ON c.servicio_id = s.id
+            LEFT JOIN groomers g ON c.groomer_id = g.id
+            LEFT JOIN usuarios gu ON g.usuario_id = gu.id
+            WHERE c.fecha BETWEEN ? AND ?
+            AND c.fecha != '00:00:00'
+            AND c.fecha != '0000-00-00'
+            AND c.fecha IS NOT NULL";
+    
+    $params = [$fecha_inicio, $fecha_fin];
+    $types = "ss";
+    
+    if ($user['rol'] == 'client') {
+        $sql .= " AND c.cliente_id = ?";
+        $params[] = $user['id'];
+        $types .= "i";
+    } elseif ($user['rol'] == 'groo') {
+        $sql .= " AND g.usuario_id = ?";
+        $params[] = $user['id'];
+        $types .= "i";
+    }
+    
+    $sql .= " ORDER BY c.fecha, c.hora";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $citas = [];
+    while ($row = $result->fetch_assoc()) {
+        if ($row['hora'] && strlen($row['hora']) >= 5) {
+            $row['hora'] = substr($row['hora'], 0, 5);
+        }
+        $citas[] = $row;
+    }
+    
+    echo json_encode(['success' => true, 'citas' => $citas]);
+    $stmt->close();
+}
+
+/**
  * Obtener citas de una semana específica
  */
 function getCitasBySemana($conn, $semana, $year, $user) {
-    // Calcular fechas de inicio y fin de la semana
     $startDate = new DateTime();
     $startDate->setISODate($year, $semana);
     $endDate = clone $startDate;
@@ -191,7 +280,7 @@ function getCitasBySemana($conn, $semana, $year, $user) {
 }
 
 /**
- * Obtener próximas citas (próximos 7 días)
+ * Obtener próximas citas (próximos 30 días)
  */
 function getProximasCitas($conn, $user) {
     $hoy = date('Y-m-d');
@@ -241,7 +330,7 @@ function getProximasCitas($conn, $user) {
 }
 
 /**
- * Crear nueva cita
+ * Crear nueva cita (CORREGIDO tipos e inserción de groomer_id)
  */
 function createCita($conn, $user) {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -255,10 +344,30 @@ function createCita($conn, $user) {
         }
     }
     
-    // Verificar disponibilidad del groomer
-    $groomer_id = $data['groomer_id'] ?? null;
+    // VALIDAR FECHA
+    if (!validarFecha($data['fecha'])) {
+        echo json_encode(['success' => false, 'error' => 'Formato de fecha inválido. Use YYYY-MM-DD']);
+        return;
+    }
+    
+    // VALIDAR HORA
+    if (!validarHora($data['hora'])) {
+        echo json_encode(['success' => false, 'error' => 'Formato de hora inválido. Use HH:MM o HH:MM:SS']);
+        return;
+    }
+    
+    $hora_normalizada = normalizarHora($data['hora']);
+    
+    $fecha_cita = strtotime($data['fecha']);
+    if ($fecha_cita < strtotime('-1 year')) {
+        echo json_encode(['success' => false, 'error' => 'La fecha de la cita es demasiado antigua']);
+        return;
+    }
+    
+    // Limpieza y manejo seguro de groomer_id
+    $groomer_id = (!empty($data['groomer_id'])) ? intval($data['groomer_id']) : null;
     if ($groomer_id) {
-        if (!checkDisponibilidad($conn, $groomer_id, $data['fecha'], $data['hora'], $data['servicio_id'])) {
+        if (!checkDisponibilidad($conn, $groomer_id, $data['fecha'], $hora_normalizada, $data['servicio_id'])) {
             echo json_encode(['success' => false, 'error' => 'El groomer no está disponible en ese horario']);
             return;
         }
@@ -274,19 +383,19 @@ function createCita($conn, $user) {
     }
     $stmt->close();
     
-    // Insertar cita
     $estado = 'pendiente';
     $observaciones = $data['observaciones'] ?? '';
     
+    // CORREGIDO: La cadena de tipos ahora mapea correctamente los parámetros ("iiiissss")
     $stmt = $conn->prepare("INSERT INTO citas (cliente_id, mascota_id, groomer_id, servicio_id, fecha, hora, estado, observaciones) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("iiiiisss", 
+    $stmt->bind_param("iiiissss", 
         $data['cliente_id'], 
         $data['mascota_id'], 
         $groomer_id, 
         $data['servicio_id'], 
         $data['fecha'], 
-        $data['hora'], 
+        $hora_normalizada, 
         $estado, 
         $observaciones
     );
@@ -294,13 +403,11 @@ function createCita($conn, $user) {
     if ($stmt->execute()) {
         $cita_id = $conn->insert_id;
         
-        // Crear notificación para el cliente
         crearNotificacion($conn, $data['cliente_id'], 
             "Nueva cita agendada", 
-            "Tu cita ha sido agendada para el {$data['fecha']} a las {$data['hora']}"
+            "Tu cita ha sido agendada para el {$data['fecha']} a las {$hora_normalizada}"
         );
         
-        // Si hay groomer asignado, notificarle también
         if ($groomer_id) {
             $stmt2 = $conn->prepare("SELECT usuario_id FROM groomers WHERE id = ?");
             $stmt2->bind_param("i", $groomer_id);
@@ -309,7 +416,7 @@ function createCita($conn, $user) {
             if ($groomer = $result->fetch_assoc()) {
                 crearNotificacion($conn, $groomer['usuario_id'], 
                     "Nueva cita asignada", 
-                    "Tienes una nueva cita para el {$data['fecha']} a las {$data['hora']}"
+                    "Tienes una nueva cita para el {$data['fecha']} a las {$hora_normalizada}"
                 );
             }
             $stmt2->close();
@@ -327,7 +434,7 @@ function createCita($conn, $user) {
 }
 
 /**
- * Actualizar cita existente
+ * Actualizar cita existente (CORREGIDO mapeo dinámico de tipos)
  */
 function updateCita($conn, $user) {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -337,7 +444,6 @@ function updateCita($conn, $user) {
         return;
     }
     
-    // Verificar permisos
     if (!hasCitaPermission($conn, $data['id'], $user)) {
         echo json_encode(['success' => false, 'error' => 'No tienes permiso para modificar esta cita']);
         return;
@@ -351,8 +457,15 @@ function updateCita($conn, $user) {
     foreach ($allowedFields as $field) {
         if (isset($data[$field])) {
             $updates[] = "$field = ?";
-            $params[] = $data[$field];
-            $types .= "s";
+            // Manejar valores nulos explícitos para el groomer
+            if ($field === 'groomer_id' && $data[$field] === '') {
+                $params[] = null;
+                $types .= "i";
+            } else {
+                $params[] = $data[$field];
+                // CORREGIDO: Mapear dinámicamente si es un id numérico
+                $types .= (in_array($field, ['groomer_id', 'servicio_id'])) ? "i" : "s";
+            }
         }
     }
     
@@ -369,7 +482,6 @@ function updateCita($conn, $user) {
     $stmt->bind_param($types, ...$params);
     
     if ($stmt->execute()) {
-        // Si cambió el estado a 'completada', crear ficha de grooming
         if (isset($data['estado']) && $data['estado'] == 'completada') {
             crearFichaGrooming($conn, $data['id']);
         }
@@ -392,7 +504,6 @@ function deleteCita($conn, $user) {
         return;
     }
     
-    // Verificar permisos
     if (!hasCitaPermission($conn, $data['id'], $user)) {
         echo json_encode(['success' => false, 'error' => 'No tienes permiso para cancelar esta cita']);
         return;
@@ -400,12 +511,10 @@ function deleteCita($conn, $user) {
     
     $motivo = $data['motivo'] ?? 'Cancelada por el usuario';
     
-    // En lugar de eliminar, cambiamos el estado a cancelada
     $stmt = $conn->prepare("UPDATE citas SET estado = 'cancelada', observaciones = CONCAT(observaciones, ' | Cancelado: ', ?) WHERE id = ?");
     $stmt->bind_param("si", $motivo, $data['id']);
     
     if ($stmt->execute()) {
-        // Obtener cliente para notificar
         $stmt2 = $conn->prepare("SELECT cliente_id FROM citas WHERE id = ?");
         $stmt2->bind_param("i", $data['id']);
         $stmt2->execute();
@@ -429,7 +538,6 @@ function deleteCita($conn, $user) {
  * Verificar disponibilidad de un groomer en fecha y hora específica
  */
 function checkDisponibilidad($conn, $groomer_id, $fecha, $hora, $servicio_id) {
-    // Obtener duración del servicio
     $stmt = $conn->prepare("SELECT duracion_min FROM servicios WHERE id = ?");
     $stmt->bind_param("i", $servicio_id);
     $stmt->execute();
@@ -438,10 +546,8 @@ function checkDisponibilidad($conn, $groomer_id, $fecha, $hora, $servicio_id) {
     $duracion = $servicio['duracion_min'] ?? 60;
     $stmt->close();
     
-    // Calcular hora de fin
     $hora_fin = date('H:i:s', strtotime($hora . " + {$duracion} minutes"));
     
-    // Verificar si hay citas que se solapen
     $stmt = $conn->prepare("SELECT c.*, s.duracion_min 
                             FROM citas c
                             JOIN servicios s ON c.servicio_id = s.id
@@ -464,11 +570,7 @@ function checkDisponibilidad($conn, $groomer_id, $fecha, $hora, $servicio_id) {
  * Verificar si el usuario tiene permiso sobre una cita
  */
 function hasCitaPermission($conn, $cita_id, $user) {
-    if ($user['rol'] == 'admin') {
-        return true;
-    }
-    
-    if ($user['rol'] == 'recep') {
+    if (in_array($user['rol'], ['admin', 'recep'])) {
         return true;
     }
     
@@ -499,7 +601,6 @@ function hasCitaPermission($conn, $cita_id, $user) {
  * Crear ficha de grooming al completar un servicio
  */
 function crearFichaGrooming($conn, $cita_id) {
-    // Verificar si ya existe
     $stmt = $conn->prepare("SELECT id FROM fichas_grooming WHERE cita_id = ?");
     $stmt->bind_param("i", $cita_id);
     $stmt->execute();
@@ -546,7 +647,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         exit;
     }
     
-    // Obtener horario laboral del groomer
     $stmt = $conn->prepare("SELECT horario_inicio, horario_fin FROM groomers WHERE id = ?");
     $stmt->bind_param("i", $groomer_id);
     $stmt->execute();
@@ -559,7 +659,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
         exit;
     }
     
-    // Obtener duración del servicio
     $stmt = $conn->prepare("SELECT duracion_min FROM servicios WHERE id = ?");
     $stmt->bind_param("i", $servicio_id);
     $stmt->execute();
@@ -568,7 +667,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $duracion = $servicio['duracion_min'] ?? 60;
     $stmt->close();
     
-    // Generar slots de 30 minutos
     $inicio = strtotime($groomer['horario_inicio']);
     $fin = strtotime($groomer['horario_fin']);
     $slots = [];
@@ -591,14 +689,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $fecha_inicio = $_GET['fecha_inicio'] ?? date('Y-m-01');
     $fecha_fin = $_GET['fecha_fin'] ?? date('Y-m-t');
     
-    // Citas por estado
     $stmt = $conn->prepare("SELECT estado, COUNT(*) as total FROM citas WHERE fecha BETWEEN ? AND ? GROUP BY estado");
     $stmt->bind_param("ss", $fecha_inicio, $fecha_fin);
     $stmt->execute();
     $estados = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
     
-    // Servicios más populares
     $stmt = $conn->prepare("SELECT s.nombre, COUNT(*) as total 
                             FROM citas c 
                             JOIN servicios s ON c.servicio_id = s.id 
@@ -611,8 +707,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
     $top_servicios = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
     
-    // Groomers más ocupados
-    $stmt = $conn->prepare("SELECT gu.nombre, COUNT(*) as total 
+    $stmt = $conn->prepare("SELECT g.id as groomer_id, gu.nombre, COUNT(*) as total 
                             FROM citas c 
                             JOIN groomers g ON c.groomer_id = g.id 
                             JOIN usuarios gu ON g.usuario_id = gu.id 

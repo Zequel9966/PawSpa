@@ -242,17 +242,153 @@ tr:hover td { background: var(--cream); }
 .modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--gray); line-height: 1; }
 .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 .modal-overlay.hidden { display: none; }
-.calendar-grid {
-  display: grid; grid-template-columns: 120px repeat(5, 1fr);
-  gap: 0; border: 1px solid var(--gray-light); border-radius: var(--radius); overflow: hidden;
+/* ═══ CALENDARIO CORREGIDO - Agregar esto dentro del <style> ═══ */
+.calendar-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-light);
+    margin-top: 10px;
 }
-.cal-header { background: var(--charcoal); color: var(--white); padding: 10px 8px; text-align: center; font-size: .8rem; font-weight: 600; }
-.cal-time { background: var(--cream); padding: 8px 12px; font-size: .75rem; color: var(--gray); border-right: 1px solid var(--gray-light); border-bottom: 1px solid var(--gray-light); display: flex; align-items: center; }
-.cal-slot { padding: 4px; border-right: 1px solid var(--gray-light); border-bottom: 1px solid var(--gray-light); min-height: 52px; position: relative; cursor: pointer; transition: background .1s; }
-.cal-slot:hover { background: var(--teal-pale); }
-.cal-slot.occupied { background: #FFF4E8; }
-.cal-event { background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: var(--white); border-radius: 6px; padding: 4px 8px; font-size: .72rem; line-height: 1.3; }
-.cal-event.caramel { background: linear-gradient(135deg, var(--caramel), #E0A880); }
+
+.calendar-grid {
+    display: grid;
+    min-width: 800px;
+}
+
+.calendar-grid .grid-row {
+    display: grid;
+    grid-template-columns: 90px repeat(5, minmax(130px, 1fr));
+}
+
+.cal-header {
+    background: var(--charcoal);
+    color: var(--white);
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.cal-header:last-child {
+    border-right: none;
+}
+
+.cal-time {
+    background: var(--cream);
+    padding: 10px 8px;
+    font-size: 0.75rem;
+    color: var(--gray);
+    border-right: 1px solid var(--gray-light);
+    border-bottom: 1px solid var(--gray-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+}
+
+.cal-slot {
+    padding: 6px;
+    border-right: 1px solid var(--gray-light);
+    border-bottom: 1px solid var(--gray-light);
+    min-height: 70px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s;
+    background: var(--white);
+}
+
+.cal-slot:hover {
+    background: var(--teal-pale);
+}
+
+.cal-slot.occupied {
+    background: #FFF8F0;
+}
+
+.cal-slot.occupied:hover {
+    background: #FFF0E0;
+}
+
+.cal-slot-empty {
+    width: 100%;
+    height: 100%;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--gray-light);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.cal-slot-empty:hover {
+    color: var(--teal);
+    font-size: 1.5rem;
+    background: rgba(45,122,107,0.1);
+    border-radius: 8px;
+}
+
+.cal-event {
+    background: linear-gradient(135deg, var(--teal), var(--teal-light));
+    color: var(--white);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    cursor: pointer;
+    transition: transform 0.15s;
+    word-break: break-word;
+}
+
+.cal-event:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.cal-event.caramel {
+    background: linear-gradient(135deg, var(--caramel), #E0A880);
+}
+
+.cal-event .badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    margin-top: 4px;
+    display: inline-block;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .calendar-grid .grid-row {
+        grid-template-columns: 80px repeat(5, minmax(110px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .calendar-grid .grid-row {
+        grid-template-columns: 70px repeat(5, minmax(90px, 1fr));
+    }
+    
+    .cal-time {
+        font-size: 0.65rem;
+        padding: 6px 4px;
+    }
+    
+    .cal-slot {
+        min-height: 60px;
+        padding: 4px;
+    }
+    
+    .cal-slot-empty {
+        min-height: 52px;
+    }
+    
+    .cal-event {
+        font-size: 0.6rem;
+        padding: 4px 6px;
+    }
+}
 .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
 .product-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; transition: transform .2s; }
 .product-card:hover { transform: translateY(-3px); }
@@ -646,17 +782,19 @@ tr:hover td { background: var(--cream); }
         </div>
         <div class="card">
           <div class="card-header">
-            <div style="display:flex;gap:10px;align-items:center">
-              <button class="btn btn-ghost btn-sm">◀</button>
-              <span style="font-weight:600;font-size:.95rem" id="calWeekLabel">Semana del 5 – 9 Mayo, 2025</span>
-              <button class="btn btn-ghost btn-sm">▶</button>
-            </div>
-            <div style="display:flex;gap:8px">
-              <span class="badge badge-teal">● Disponible</span>
-              <span class="badge badge-orange">● Ocupado</span>
-              <span class="badge badge-red">● Bloqueado</span>
-            </div>
-          </div>
+    <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="semanaAnterior()">◀ Semana anterior</button>
+        <button class="btn btn-teal btn-sm" onclick="irSemanaActual()">📅 Hoy</button>
+        <span style="font-weight:600;font-size:.95rem" id="calWeekLabel">Semana actual</span>
+        <button class="btn btn-ghost btn-sm" onclick="semanaSiguiente()">Semana siguiente ▶</button>
+    </div>
+    <div style="display:flex;gap:8px">
+        <span class="badge badge-teal">● Disponible</span>
+        <span class="badge badge-orange">● Ocupado</span>
+        <span class="badge badge-red">● Cancelado</span>
+        <span class="badge badge-green">● Completado</span>
+      </div>
+    </div>
           <div class="table-wrap"><div class="calendar-grid" id="calendarGrid"></div></div>
         </div>
         <div class="card">
@@ -1047,38 +1185,63 @@ tr:hover td { background: var(--cream); }
 
 <!-- Modal Nueva Cita -->
 <div class="modal-overlay hidden" id="modalNuevaCita">
-  <div class="modal">
-    <div class="modal-header"><h3 class="modal-title">📅 Nueva Cita</h3><button class="modal-close" onclick="closeModal('modalNuevaCita')">×</button></div>
-    <div class="form-row">
-      <div class="form-col input-group"><label>Cliente</label><input type="text" id="citaCliente" placeholder="Nombre del cliente"></div>
-      <div class="form-col input-group"><label>Mascota</label><input type="text" id="citaMascota" placeholder="Nombre de la mascota"></div>
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">📅 Nueva Cita</h3>
+            <button class="modal-close" onclick="closeModal('modalNuevaCita')">×</button>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-col input-group">
+                <label>Cliente *</label>
+                <select id="citaClienteSelect" style="width:100%">
+                    <option value="">🔍 Cargando clientes...</option>
+                </select>
+            </div>
+            <div class="form-col input-group">
+                <label>Mascota *</label>
+                <select id="citaMascotaSelect" style="width:100%" disabled>
+                    <option value="">🔍 Primero seleccione un cliente</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-col input-group">
+                <label>Fecha *</label>
+                <input type="date" id="citaFecha">
+            </div>
+            <div class="form-col input-group">
+                <label>Hora *</label>
+                <input type="time" id="citaHora">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-col input-group">
+                <label>Servicio *</label>
+                <select id="citaServicio">
+                    <option value="">⏳ Cargando servicios...</option>
+                </select>
+            </div>
+            <div class="form-col input-group">
+                <label>Groomer</label>
+                <select id="citaGroomer">
+                    <option value="">👤 Sin asignar</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label>Observaciones</label>
+            <textarea id="citaObs" rows="3" placeholder="Alergias, temperamento, notas especiales..."></textarea>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('modalNuevaCita')">Cancelar</button>
+            <button class="btn btn-teal" onclick="guardarCitaBD()">✅ Confirmar Cita</button>
+        </div>
     </div>
-    <div class="form-row">
-      <div class="form-col input-group"><label>Fecha</label><input type="date" id="citaFecha"></div>
-      <div class="form-col input-group"><label>Hora</label><input type="time" id="citaHora" value="09:00"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-col input-group"><label>Servicio</label>
-        <select id="citaServicio">
-          <option value="Baño Rápido">Baño Rápido (30 min · Bs.45)</option>
-          <option value="Baño + Corte">Baño + Corte (60 min · Bs.85)</option>
-          <option value="Servicio Completo">Servicio Completo (90 min · Bs.120)</option>
-        </select>
-      </div>
-      <div class="form-col input-group"><label>Groomer</label>
-        <select id="citaGroomer">
-          <option>María González</option>
-          <option>Carlos Ríos</option>
-          <option>Ana Flores</option>
-        </select>
-      </div>
-    </div>
-    <div class="input-group"><label>Observaciones</label><textarea id="citaObs" placeholder="Alergias, temperamento, notas especiales..."></textarea></div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modalNuevaCita')">Cancelar</button>
-      <button class="btn btn-teal" onclick="guardarCita()">✅ Confirmar Cita</button>
-    </div>
-  </div>
 </div>
 
 <!-- Modal Ficha Grooming -->
@@ -2056,28 +2219,197 @@ function buildStats(role) {
     </div>`).join('');
 }
 
-function buildCalendar() {
-  const grid = document.getElementById('calendarGrid');
-  if (!grid) return;
-  const days = ['', 'Lunes 5', 'Martes 6', 'Miércoles 7', 'Jueves 8', 'Viernes 9'];
-  const hours = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
-  const events = {
-    '09:00-0': '<div class="cal-event">Mishi — Completo</div>',
-    '10:00-1': '<div class="cal-event caramel">Max — Rápido</div>',
-    '11:00-0': '<div class="cal-event">Rocky — B+C</div>',
-    '14:00-1': '<div class="cal-event caramel">Coco — Rápido</div>',
-    '12:30-0': '<div style="font-size:.7rem;color:var(--rust);padding:4px">🚫 Almuerzo</div>',
-  };
-  let html = days.map(d => `<div class="cal-header">${d}</div>`).join('');
-  hours.forEach(h => {
-    html += `<div class="cal-time">${h}</div>`;
-    for (let i = 0; i < 5; i++) {
-      const key = `${h}-${i%3}`;
-      const hasEvent = events[key];
-      html += `<div class="cal-slot ${hasEvent?'occupied':''}" onclick="showToast('Slot ${h} seleccionado','success')">${hasEvent||''}</div>`;
+// ============================================
+// CALENDARIO DE CITAS - VERSIÓN COMPLETA
+// ============================================
+
+let currentWeekStart = new Date();
+let citasSemana = [];
+
+// Obtener el inicio de la semana actual (lunes)
+function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    // En JavaScript, domingo = 0, lunes = 1
+    // Queremos que la semana empiece el lunes
+    const diff = (day === 0 ? 6 : day - 1);
+    d.setDate(d.getDate() - diff);
+    d.setHours(0, 0, 0, 0);
+    console.log('📅 Semana comienza el:', d);
+    return d;
+}
+
+function formatDateForDB(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Formatear fecha para mostrar
+function formatDateDisplay(date) {
+    return date.toLocaleDateString('es-BO', { day: 'numeric', month: 'short' });
+}
+
+// Formatear fecha para la BD (YYYY-MM-DD)
+function formatDateForDB(date) {
+    return date.toISOString().split('T')[0];
+}
+
+// Cargar citas de la semana actual
+async function cargarCitasSemana() {
+    if (!currentWeekStart) {
+        currentWeekStart = getWeekStart(new Date());
     }
-  });
-  grid.innerHTML = html;
+    
+    const fechaInicio = formatDateForDB(currentWeekStart);
+    const fechaFin = formatDateForDB(new Date(currentWeekStart.getTime() + 4 * 24 * 60 * 60 * 1000));
+    
+    console.log('📅 Cargando citas desde:', fechaInicio, 'hasta:', fechaFin);
+    
+    try {
+        // USAR EL ENDPOINT CON RANGO DE FECHAS
+        const response = await fetch(`${API_URL}citas.php?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`);
+        const data = await response.json();
+        
+        console.log('📦 Citas de la semana:', data);
+        
+        if (data.success && data.citas) {
+            // Filtrar solo citas con fecha válida (no 0000-00-00)
+            citasSemana = data.citas.filter(c => {
+                return c.fecha && c.fecha !== '0000-00-00' && c.fecha !== '00:00:00';
+            });
+            console.log(`✅ ${citasSemana.length} citas válidas en la semana`);
+            buildCalendar();
+        } else {
+            console.error('Error en respuesta:', data);
+            citasSemana = [];
+            buildCalendar();
+        }
+    } catch (error) {
+        console.error('❌ Error cargando citas:', error);
+        citasSemana = [];
+        buildCalendar();
+    }
+}
+
+// Construir el calendario
+function buildCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    if (!grid) {
+        console.error('❌ calendarGrid no encontrado');
+        return;
+    }
+    
+    console.log('🏗️ Construyendo calendario con', citasSemana.length, 'citas');
+    
+    // Crear tabla
+    let html = '<table style="width:100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">';
+    
+    // Encabezados
+    html += '<thead><tr>';
+    html += '<th style="padding: 12px; border: 1px solid #ddd; background: #2C2C2C; color: white; text-align: center;">Hora</th>';
+    
+    const dias = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'];
+    const fechas = [];
+    
+    for (let i = 0; i < 5; i++) {
+        const day = new Date(currentWeekStart);
+        day.setDate(currentWeekStart.getDate() + i);
+        const fechaStr = day.toISOString().split('T')[0];
+        fechas.push(fechaStr);
+        html += `<th style="padding: 12px; border: 1px solid #ddd; background: #2C2C2C; color: white; text-align: center;">
+                    ${dias[i]}<br><span style="font-size: 0.8rem;">${day.getDate()}/${day.getMonth()+1}</span>
+                </th>`;
+    }
+    html += '</tr></thead><tbody>';
+    
+    // Horarios (9:00 a 18:00)
+    const horas = [];
+    for (let h = 9; h <= 17; h++) {
+        horas.push(`${h.toString().padStart(2, '0')}:00`);
+        horas.push(`${h.toString().padStart(2, '0')}:30`);
+    }
+    horas.push('18:00');
+    
+    // Filas de horas
+    horas.forEach(hora => {
+        html += '<tr>';
+        html += `<td style="padding: 10px; border: 1px solid #ddd; background: #FAF6F0; font-weight: bold; text-align: center;">${hora}</td>`;
+        
+        for (let i = 0; i < 5; i++) {
+            const fechaStr = fechas[i];
+            
+            // Buscar cita
+            const cita = citasSemana.find(c => {
+                let citaHora = c.hora;
+                if (citaHora && citaHora.length > 5) {
+                    citaHora = citaHora.substring(0, 5);
+                }
+                return c.fecha === fechaStr && citaHora === hora;
+            });
+            
+            if (cita) {
+                const nombreMascota = cita.mascota_nombre || 
+                                     (cita.mascota_id === 13 ? 'Toba' : 
+                                      cita.mascota_id === 18 ? 'Rocky' : 
+                                      cita.mascota_id === 19 ? 'Luna' : 'Mascota');
+                
+                const servicioNombre = cita.servicio_nombre || 
+                                      (cita.servicio_id === 1 ? 'Baño Rápido' :
+                                       cita.servicio_id === 2 ? 'Baño + Corte' :
+                                       cita.servicio_id === 3 ? 'Servicio Completo' : 'Servicio');
+                
+                html += `<td style="padding: 6px; border: 1px solid #ddd; background: #FFF8F0; cursor: pointer;" onclick="verDetalleCita(${cita.id})">
+                            <div style="background: linear-gradient(135deg, #2D7A6B, #3D9B8A); color: white; padding: 6px; border-radius: 8px; font-size: 0.7rem; text-align: center;">
+                                <strong>${nombreMascota}</strong><br>
+                                <small>${servicioNombre}</small><br>
+                                <span style="font-size: 0.6rem; background: rgba(255,255,255,0.2); padding: 2px 4px; border-radius: 4px; display: inline-block; margin-top: 3px;">${cita.estado}</span>
+                            </div>
+                          </td>`;
+            } else {
+                // Asegurar que los parámetros no sean undefined
+                const fechaParam = fechaStr || '';
+                const horaParam = hora || '';
+                html += `<td style="padding: 6px; border: 1px solid #ddd; text-align: center; cursor: pointer; vertical-align: middle;" 
+                               onclick="abrirModalNuevaCita('${fechaParam}', '${horaParam}')">
+                            <span style="font-size: 1.2rem; color: #ccc; display: block;">+</span>
+                          </td>`;
+            }
+        }
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    grid.innerHTML = html;
+    
+    // Actualizar etiqueta de la semana
+    const weekLabel = document.getElementById('calWeekLabel');
+    if (weekLabel) {
+        const firstDay = new Date(currentWeekStart);
+        const lastDay = new Date(currentWeekStart);
+        lastDay.setDate(currentWeekStart.getDate() + 4);
+        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        weekLabel.textContent = `Semana del ${firstDay.getDate()} ${meses[firstDay.getMonth()]} al ${lastDay.getDate()} ${meses[lastDay.getMonth()]}, ${firstDay.getFullYear()}`;
+    }
+    
+    console.log('✅ Calendario construido');
+}
+
+// Navegar semanas
+function semanaAnterior() {
+    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+    cargarCitasSemana();
+}
+
+function semanaSiguiente() {
+    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    cargarCitasSemana();
+}
+
+function irSemanaActual() {
+    currentWeekStart = getWeekStart(new Date());
+    cargarCitasSemana();
 }
 
 function initApp(role) {
@@ -2086,6 +2418,11 @@ function initApp(role) {
   if (av) {
     av.textContent = r.avatar;
     av.className = `user-avatar ${r.avClass}`;
+
+     // Inicializar calendario
+    currentWeekStart = getWeekStart(new Date());
+    cargarCitasSemana();
+    cargarListaCitas();
   }
   document.getElementById('userName').textContent = currentUser ? currentUser.nombre : r.label;
   document.getElementById('userRoleLabel').textContent = r.label;
@@ -2687,26 +3024,7 @@ function renderCitas() {
     </tr>`).join('');
 }
 
-function guardarCita() {
-  const cliente = document.getElementById('citaCliente').value.trim();
-  const mascota = document.getElementById('citaMascota').value.trim();
-  const fecha = document.getElementById('citaFecha').value;
-  const hora = document.getElementById('citaHora').value;
-  const servicio = document.getElementById('citaServicio').value;
-  const groomer = document.getElementById('citaGroomer').value;
-  if (!cliente || !mascota || !fecha) { showToast('Complete los campos requeridos','error'); return; }
-  const nueva = {
-    id: `#00${DB.nextCitaId++}`,
-    fecha: `${fecha.slice(5).replace('-','/')} ${hora}`,
-    cliente, mascota: `🐾 ${mascota}`, servicio, groomer: groomer.split(' ')[0]+' G.', estado:'Confirmado'
-  };
-  DB.citas.push(nueva);
-  saveDB();
-  addLog('create','Cita registrada', `${cliente} — ${mascota} — ${servicio} — ${fecha} ${hora}`);
-  renderCitas();
-  closeModal('modalNuevaCita');
-  showToast('✅ Cita confirmada. Notificación enviada al cliente.','success');
-}
+
 
 function cancelarCita(idx) {
   if (!confirm('¿Cancelar esta cita?')) return;
@@ -3512,6 +3830,421 @@ activityEvents.forEach(event => {
 // Iniciar el temporizador cuando la página carga
 if (IS_ADMIN || IS_RECEP || IS_GROOMER || IS_CLIENT) {
     resetInactivityTimer();
+}
+
+// Variables globales para nueva cita
+let nuevaCitaFecha = '';
+let nuevaCitaHora = '';
+
+// ============================================
+// ABRIR MODAL NUEVA CITA (CORREGIDO)
+// ============================================
+function abrirModalNuevaCita(fecha, hora) {
+    console.log('🔵🔵🔵 ABRIENDO MODAL CON:', { fecha, hora });
+    
+    if (!fecha || !hora) {
+        console.error('❌ Fecha u hora no definidas:', { fecha, hora });
+        showToast('Error al abrir el modal: fecha u hora no definidas', 'error');
+        return;
+    }
+    
+    // Guardar en variables globales
+    nuevaCitaFecha = fecha;
+    nuevaCitaHora = hora;
+    
+    console.log('✅ Variables globales guardadas:');
+    console.log('  nuevaCitaFecha:', nuevaCitaFecha);
+    console.log('  nuevaCitaHora:', nuevaCitaHora);
+    
+    // Asignar a los inputs del modal
+    const fechaInput = document.getElementById('citaFecha');
+    const horaInput = document.getElementById('citaHora');
+    const obsInput = document.getElementById('citaObs');
+    
+    if (fechaInput) {
+        fechaInput.value = fecha;
+        console.log('  Input fecha asignado:', fechaInput.value);
+    }
+    if (horaInput) {
+        horaInput.value = hora;
+        console.log('  Input hora asignado:', horaInput.value);
+    }
+    if (obsInput) obsInput.value = '';
+    
+    // Resetear selects
+    const selectCliente = document.getElementById('citaClienteSelect');
+    const selectMascota = document.getElementById('citaMascotaSelect');
+    
+    if (selectCliente) selectCliente.value = '';
+    if (selectMascota) {
+        selectMascota.innerHTML = '<option value="">🔍 Primero seleccione un cliente</option>';
+        selectMascota.disabled = true;
+    }
+    
+    // Cargar datos en los selects
+    cargarClientesEnSelect();
+    cargarServiciosEnSelect();
+    cargarGroomersEnSelect();
+    
+    // Abrir el modal
+    openModal('modalNuevaCita');
+}
+
+// ============================================
+// CARGAR CLIENTES EN SELECT
+// ============================================
+
+async function cargarClientesEnSelect() {
+    const selectCliente = document.getElementById('citaClienteSelect');
+    if (!selectCliente) return;
+    
+    try {
+        const response = await fetch(API_URL + 'clientes.php');
+        const data = await response.json();
+        
+        if (data.success && data.clientes) {
+            selectCliente.innerHTML = '<option value="">🔍 Seleccione un cliente...</option>';
+            data.clientes.forEach(cliente => {
+                selectCliente.innerHTML += `<option value="${cliente.id}">🐾 ${cliente.nombre} - 📱 ${cliente.telefono || 'sin teléfono'}</option>`;
+            });
+            
+            // Agregar evento para cargar mascotas cuando se selecciona un cliente
+            selectCliente.onchange = function() {
+                const clienteId = this.value;
+                if (clienteId) {
+                    cargarMascotasPorCliente(clienteId);
+                } else {
+                    limpiarSelectMascotas();
+                }
+            };
+        } else {
+            selectCliente.innerHTML = '<option value="">❌ Error cargando clientes</option>';
+        }
+    } catch (error) {
+        console.error('Error cargando clientes:', error);
+        const selectCliente = document.getElementById('citaClienteSelect');
+        if (selectCliente) {
+            selectCliente.innerHTML = '<option value="">❌ Error de conexión</option>';
+        }
+    }
+}
+
+// ============================================
+// CARGAR MASCOTAS POR CLIENTE
+// ============================================
+
+async function cargarMascotasPorCliente(clienteId) {
+    const selectMascota = document.getElementById('citaMascotaSelect');
+    if (!selectMascota) return;
+    
+    selectMascota.innerHTML = '<option value="">⏳ Cargando mascotas...</option>';
+    selectMascota.disabled = true;
+    
+    try {
+        const response = await fetch(`${API_URL}clientes.php?action=mascotas_cliente&cliente_id=${clienteId}`);
+        const data = await response.json();
+        
+        if (data.success && data.mascotas && data.mascotas.length > 0) {
+            selectMascota.innerHTML = '<option value="">🐕 Seleccione una mascota...</option>';
+            data.mascotas.forEach(mascota => {
+                const especieIcon = mascota.especie === 'perro' ? '🐕' : (mascota.especie === 'gato' ? '🐈' : '🐾');
+                selectMascota.innerHTML += `<option value="${mascota.id}">${especieIcon} ${mascota.nombre} - ${mascota.raza || 'Sin raza'} (${mascota.edad || '?'} años)</option>`;
+            });
+            selectMascota.disabled = false;
+        } else {
+            selectMascota.innerHTML = '<option value="">⚠️ No tiene mascotas registradas</option>';
+            selectMascota.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error cargando mascotas:', error);
+        selectMascota.innerHTML = '<option value="">❌ Error cargando mascotas</option>';
+        selectMascota.disabled = false;
+    }
+}
+
+function limpiarSelectMascotas() {
+    const selectMascota = document.getElementById('citaMascotaSelect');
+    if (selectMascota) {
+        selectMascota.innerHTML = '<option value="">🔍 Primero seleccione un cliente</option>';
+        selectMascota.disabled = true;
+    }
+}
+
+// ============================================
+// CARGAR SERVICIOS EN SELECT
+// ============================================
+
+async function cargarServiciosEnSelect() {
+    const selectServicio = document.getElementById('citaServicio');
+    if (!selectServicio) return;
+    
+    try {
+        const response = await fetch(API_URL + 'get_all_data.php');
+        const data = await response.json();
+        
+        if (data.success && data.data.servicios) {
+            selectServicio.innerHTML = '';
+            data.data.servicios.forEach(servicio => {
+                if (servicio.activo == 1) {
+                    selectServicio.innerHTML += `<option value="${servicio.id}">✂️ ${servicio.nombre} (${servicio.duracion_min} min · Bs.${servicio.precio_base})</option>`;
+                }
+            });
+        } else {
+            // Valores por defecto si no hay servicios en BD
+            selectServicio.innerHTML = `
+                <option value="1">✂️ Baño Rápido (30 min · Bs.45)</option>
+                <option value="2">✂️ Baño + Corte (60 min · Bs.85)</option>
+                <option value="3">✂️ Servicio Completo (90 min · Bs.120)</option>
+            `;
+        }
+    } catch (error) {
+        console.error('Error cargando servicios:', error);
+        // Valores por defecto
+        selectServicio.innerHTML = `
+            <option value="1">✂️ Baño Rápido (30 min · Bs.45)</option>
+            <option value="2">✂️ Baño + Corte (60 min · Bs.85)</option>
+            <option value="3">✂️ Servicio Completo (90 min · Bs.120)</option>
+        `;
+    }
+}
+
+// ============================================
+// CARGAR GROOMERS EN SELECT
+// ============================================
+
+async function cargarGroomersEnSelect() {
+    const selectGroomer = document.getElementById('citaGroomer');
+    if (!selectGroomer) return;
+    
+    try {
+        const response = await fetch(API_URL + 'get_all_data.php');
+        const data = await response.json();
+        
+        if (data.success && data.data.groomers) {
+            selectGroomer.innerHTML = '<option value="">👤 Sin asignar</option>';
+            data.data.groomers.forEach(groomer => {
+                selectGroomer.innerHTML += `<option value="${groomer.id}">✂️ ${groomer.nombre}</option>`;
+            });
+        } else {
+            selectGroomer.innerHTML = `
+                <option value="">👤 Sin asignar</option>
+                <option value="1">✂️ María González</option>
+                <option value="2">✂️ Carlos Ríos</option>
+            `;
+        }
+    } catch (error) {
+        console.error('Error cargando groomers:', error);
+        selectGroomer.innerHTML = `
+            <option value="">👤 Sin asignar</option>
+            <option value="1">✂️ María González</option>
+            <option value="2">✂️ Carlos Ríos</option>
+        `;
+    }
+}
+
+async function guardarCitaBD() {
+    console.log('🚨 GUARDAR CITA - INICIO 🚨');
+    
+    const cliente_id = document.getElementById('citaClienteSelect')?.value;
+    const mascota_id = document.getElementById('citaMascotaSelect')?.value;
+    const servicio_id = document.getElementById('citaServicio')?.value;
+    const groomer_id = document.getElementById('citaGroomer')?.value;
+    const observaciones = document.getElementById('citaObs')?.value;
+    
+    // OBTENER FECHA Y HORA DEL INPUT
+    const fechaInput = document.getElementById('citaFecha');
+    const horaInput = document.getElementById('citaHora');
+
+    let fecha = fechaInput ? fechaInput.value.trim() : '';
+    let hora = horaInput ? horaInput.value.trim() : '';
+    
+    console.log('📅 Fecha obtenida del input:', fecha);
+    console.log('⏰ Hora obtenida del input:', hora);
+    
+    // Si el input está vacío, usar las variables globales como respaldo
+    if (!fecha && window.nuevaCitaFecha) {
+        console.log('⚠️ Usando nuevaCitaFecha como respaldo:', window.nuevaCitaFecha);
+        fecha = window.nuevaCitaFecha;
+    }
+    if (!hora && window.nuevaCitaHora) {
+        console.log('⚠️ Usando nuevaCitaHora como respaldo:', window.nuevaCitaHora);
+        hora = window.nuevaCitaHora;
+    }
+    
+    // Validaciones
+    if (!cliente_id) {
+        showToast('❌ Por favor seleccione un cliente', 'error');
+        return;
+    }
+    
+    if (!mascota_id) {
+        showToast('❌ Por favor seleccione una mascota', 'error');
+        return;
+    }
+    
+    if (!servicio_id) {
+        showToast('❌ Por favor seleccione un servicio', 'error');
+        return;
+    }
+    
+    if (!fecha) {
+        showToast('❌ La fecha no puede estar vacía', 'error');
+        console.error('❌ FECHA VACÍA');
+        return;
+    }
+    
+    if (!hora) {
+        showToast('❌ La hora no puede estar vacía', 'error');
+        return;
+    }
+    
+    // Validar formato de fecha
+    if (!fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        showToast('❌ Formato de fecha inválido: ' + fecha, 'error');
+        return;
+    }
+    
+    // Asegurar formato de hora (HH:MM:SS)
+    if (hora && hora.split(':').length === 2) {
+        hora = hora + ':00';
+    }
+    
+    const datosEnviar = {
+        cliente_id: parseInt(cliente_id),
+        mascota_id: parseInt(mascota_id),
+        servicio_id: parseInt(servicio_id),
+        groomer_id: groomer_id ? parseInt(groomer_id) : null,
+        fecha: fecha,
+        hora: hora,
+        observaciones: observaciones || ''
+    };
+    
+    console.log('📤 DATOS A ENVIAR:', datosEnviar);
+    
+    const btn = document.querySelector('#modalNuevaCita .btn-teal');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Guardando...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(API_URL + 'citas.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosEnviar)
+        });
+        
+        const data = await response.json();
+        console.log('📦 RESPUESTA:', data);
+        
+        if (data.success) {
+            showToast('✅ Cita agendada correctamente', 'success');
+            closeModal('modalNuevaCita');
+            await cargarCitasSemana();
+            await cargarListaCitas();
+        } else {
+            showToast('❌ Error: ' + (data.error || 'No se pudo guardar'), 'error');
+        }
+    } catch (error) {
+        console.error('❌ Error:', error);
+        showToast('❌ Error de conexión', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Ver detalle de una cita
+async function verDetalleCita(citaId) {
+    try {
+        const response = await fetch(`${API_URL}citas.php?id=${citaId}`);
+        const data = await response.json();
+        
+        if (data.success && data.cita) {
+            const cita = data.cita;
+            const mensaje = `
+                🐾 CITA #${cita.id}
+                📅 Fecha: ${cita.fecha}
+                ⏰ Hora: ${cita.hora}
+                👤 Cliente: ${cita.cliente_nombre}
+                🐕 Mascota: ${cita.mascota_nombre}
+                ✂️ Servicio: ${cita.servicio_nombre}
+                👨‍🏫 Groomer: ${cita.groomer_nombre || 'Por asignar'}
+                📝 Estado: ${cita.estado}
+                📋 Observaciones: ${cita.observaciones || 'Ninguna'}
+            `;
+            alert(mensaje);
+        } else {
+            showToast('Error al cargar detalle de la cita', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error de conexión', 'error');
+    }
+}
+
+// Cargar lista de citas en la tabla
+async function cargarListaCitas() {
+    const tbody = document.getElementById('citasBody');
+    if (!tbody) return;
+    
+    try {
+        const response = await fetch(API_URL + 'citas.php');
+        const data = await response.json();
+        
+        if (data.success && data.citas) {
+            const estadoBadge = {
+                'pendiente': 'badge-gray',
+                'confirmada': 'badge-blue',
+                'en_progreso': 'badge-orange',
+                'completada': 'badge-green',
+                'cancelada': 'badge-red'
+            };
+            
+            tbody.innerHTML = data.citas.map(c => `
+                <tr>
+                    <td>${c.id}</td>
+                    <td>${c.fecha} ${c.hora}</td>
+                    <td>${c.cliente_nombre}</td>
+                    <td>${c.mascota_nombre}</td>
+                    <td>${c.servicio_nombre}</td>
+                    <td>${c.groomer_nombre || '—'}</td>
+                    <td><span class="badge ${estadoBadge[c.estado] || 'badge-gray'}">${c.estado}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" onclick="verDetalleCita(${c.id})">👁️ Ver</button>
+                        ${IS_ADMIN || IS_RECEP ? `<button class="btn btn-sm btn-danger" onclick="cancelarCitaBD(${c.id})">🗑️ Cancelar</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error cargando lista de citas:', error);
+    }
+}
+
+// Cancelar cita
+async function cancelarCitaBD(citaId) {
+    if (!confirm('¿Estás seguro de cancelar esta cita?')) return;
+    
+    try {
+        const response = await fetch(API_URL + 'citas.php', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: citaId, motivo: 'Cancelado por el administrador' })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('✅ Cita cancelada correctamente', 'success');
+            cargarCitasSemana();
+            cargarListaCitas();
+        } else {
+            showToast('❌ Error: ' + (data.error || 'No se pudo cancelar'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión', 'error');
+    }
 }
 
 </script>

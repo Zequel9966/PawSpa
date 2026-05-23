@@ -12,7 +12,7 @@ $data = [];
 $result = $conn->query("SELECT * FROM productos WHERE activo = 1");
 $data['productos'] = $result->fetch_all(MYSQLI_ASSOC);
 
-// En get_all_data.php - Modificar la sección de clientes
+// 2 sección de clientes
 $sql = "SELECT u.id as usuario_id, u.nombre, u.email, u.telefono, u.puntos, u.fecha_registro,
                c.id as cliente_id, c.direccion
         FROM usuarios u 
