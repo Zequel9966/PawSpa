@@ -17,13 +17,8 @@ if (!$usuario) {
     exit;
 }
 
-// Verificar rol para clientes (solo admin y recep pueden ver clientes)
-if (!in_array($usuario['rol'], ['admin', 'recep'])) {
-    echo json_encode(['success' => false, 'error' => 'No tienes permiso para acceder a esta sección']);
-    exit;
-}
-
 $method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? '';
 
 // Función para guardar logs
 function guardarLog($conn, $tipo, $accion, $detalle) {
@@ -41,9 +36,14 @@ function guardarLog($conn, $tipo, $accion, $detalle) {
 }
 
 // ============================================
-// GET - Obtener clientes
+// GET - Obtener clientes (solo admin y recep)
 // ============================================
 if ($method === 'GET' && !isset($_GET['action'])) {
+    if (!in_array($usuario['rol'], ['admin', 'recep'])) {
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para ver clientes']);
+        exit;
+    }
+    
     $sql = "SELECT id, nombre, email, telefono, puntos FROM usuarios WHERE rol = 'client' AND activo = 1 ORDER BY id DESC";
     $result = $conn->query($sql);
     
@@ -54,14 +54,12 @@ if ($method === 'GET' && !isset($_GET['action'])) {
     
     $clientes = [];
     while ($row = $result->fetch_assoc()) {
-        // Contar mascotas del cliente
         $stmt = $conn->prepare("SELECT COUNT(*) as total FROM mascotas WHERE cliente_id = ?");
         $stmt->bind_param("i", $row['id']);
         $stmt->execute();
         $mascotas = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         
-        // Determinar nivel según puntos
         $nivel = 'Bronze';
         if ($row['puntos'] >= 1000) $nivel = 'Gold';
         elseif ($row['puntos'] >= 500) $nivel = 'Silver';
@@ -85,11 +83,17 @@ if ($method === 'GET' && !isset($_GET['action'])) {
 // ============================================
 // GET - Obtener mascotas de un cliente
 // ============================================
-if ($method === 'GET' && isset($_GET['action']) && $_GET['action'] === 'mascotas_cliente') {
+if ($method === 'GET' && $action === 'mascotas_cliente') {
     $cliente_id = isset($_GET['cliente_id']) ? intval($_GET['cliente_id']) : 0;
     
     if ($cliente_id <= 0) {
         echo json_encode(['success' => false, 'error' => 'ID de cliente requerido']);
+        exit;
+    }
+    
+    // Verificar permiso: el cliente solo puede ver sus propias mascotas
+    if ($usuario['rol'] !== 'admin' && $usuario['rol'] !== 'recep' && $usuario['id'] != $cliente_id) {
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para ver estas mascotas']);
         exit;
     }
     
@@ -109,9 +113,14 @@ if ($method === 'GET' && isset($_GET['action']) && $_GET['action'] === 'mascotas
 }
 
 // ============================================
-// POST - Crear nuevo cliente
+// POST - Crear nuevo cliente (solo admin y recep)
 // ============================================
 if ($method === 'POST' && !isset($_GET['action'])) {
+    if (!in_array($usuario['rol'], ['admin', 'recep'])) {
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para crear clientes']);
+        exit;
+    }
+    
     $data = json_decode(file_get_contents('php://input'), true);
     
     $nombre = trim($data['nombre'] ?? '');
@@ -123,7 +132,6 @@ if ($method === 'POST' && !isset($_GET['action'])) {
         exit;
     }
     
-    // Verificar si el email ya existe
     $stmt = $conn->prepare("SELECT id FROM usuarios WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
@@ -133,17 +141,14 @@ if ($method === 'POST' && !isset($_GET['action'])) {
     }
     $stmt->close();
     
-    // Generar contraseña aleatoria
     $password = substr(md5($email . time()), 0, 8);
     
-    // Insertar usuario
     $stmt = $conn->prepare("INSERT INTO usuarios (nombre, email, password, rol, telefono, activo) VALUES (?, ?, MD5(?), 'client', ?, 1)");
     $stmt->bind_param("ssss", $nombre, $email, $password, $telefono);
     
     if ($stmt->execute()) {
         $usuario_id = $conn->insert_id;
         
-        // Insertar en tabla clientes
         $stmt2 = $conn->prepare("INSERT INTO clientes (usuario_id) VALUES (?)");
         $stmt2->bind_param("i", $usuario_id);
         $stmt2->execute();
@@ -169,9 +174,9 @@ if ($method === 'POST' && !isset($_GET['action'])) {
 }
 
 // ============================================
-// POST - Crear nueva mascota
+// POST - Crear nueva mascota (cliente, admin, recep)
 // ============================================
-if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'mascota_cliente') {
+if ($method === 'POST' && $action === 'mascota_cliente') {
     $data = json_decode(file_get_contents('php://input'), true);
     
     $cliente_id = intval($data['cliente_id'] ?? 0);
@@ -194,7 +199,12 @@ if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'mascota
         exit;
     }
     
-    // Verificar que el cliente existe
+    // Verificar permiso: el cliente solo puede agregar mascotas a su propia cuenta
+    if ($usuario['rol'] !== 'admin' && $usuario['rol'] !== 'recep' && $usuario['id'] != $cliente_id) {
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para agregar mascotas a este cliente']);
+        exit;
+    }
+    
     $stmt = $conn->prepare("SELECT id FROM usuarios WHERE id = ? AND rol = 'client'");
     $stmt->bind_param("i", $cliente_id);
     $stmt->execute();
@@ -228,6 +238,11 @@ if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'mascota
 // PUT - Actualizar cliente
 // ============================================
 if ($method === 'PUT' && !isset($_GET['action'])) {
+    if (!in_array($usuario['rol'], ['admin', 'recep'])) {
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para editar clientes']);
+        exit;
+    }
+    
     $input = file_get_contents('php://input');
     $data = json_decode($input, true);
     
@@ -242,7 +257,6 @@ if ($method === 'PUT' && !isset($_GET['action'])) {
         exit;
     }
     
-    // Verificar si el email ya existe en otro usuario
     $stmt = $conn->prepare("SELECT id FROM usuarios WHERE email = ? AND id != ?");
     $stmt->bind_param("si", $email, $id);
     $stmt->execute();
@@ -253,12 +267,10 @@ if ($method === 'PUT' && !isset($_GET['action'])) {
     }
     $stmt->close();
     
-    // Actualizar el usuario
     $stmt = $conn->prepare("UPDATE usuarios SET nombre = ?, email = ?, telefono = ? WHERE id = ? AND rol = 'client'");
     $stmt->bind_param("sssi", $nombre, $email, $telefono, $id);
     
     if ($stmt->execute()) {
-        // Actualizar puntos según nivel
         $puntos = 0;
         if ($nivel === 'Gold') $puntos = 1000;
         elseif ($nivel === 'Silver') $puntos = 500;
@@ -281,7 +293,7 @@ if ($method === 'PUT' && !isset($_GET['action'])) {
 // ============================================
 // PUT - Actualizar mascota
 // ============================================
-if ($method === 'PUT' && isset($_GET['action']) && $_GET['action'] === 'mascota_cliente') {
+if ($method === 'PUT' && $action === 'mascota_cliente') {
     $data = json_decode(file_get_contents('php://input'), true);
     
     $mascota_id = intval($data['mascota_id'] ?? 0);
@@ -313,9 +325,39 @@ if ($method === 'PUT' && isset($_GET['action']) && $_GET['action'] === 'mascota_
 }
 
 // ============================================
-// DELETE - Eliminar cliente
+// DELETE - Eliminar mascota
+// ============================================
+if ($method === 'DELETE' && $action === 'mascota_cliente') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $mascota_id = intval($data['mascota_id'] ?? 0);
+    
+    if ($mascota_id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'ID inválido']);
+        exit;
+    }
+    
+    $stmt = $conn->prepare("DELETE FROM mascotas WHERE id = ?");
+    $stmt->bind_param("i", $mascota_id);
+    
+    if ($stmt->execute()) {
+        guardarLog($conn, 'delete', 'Mascota eliminada', "ID: {$mascota_id}");
+        echo json_encode(['success' => true, 'message' => 'Mascota eliminada correctamente']);
+    } else {
+        echo json_encode(['success' => false, 'error' => $stmt->error]);
+    }
+    $stmt->close();
+    exit;
+}
+
+// ============================================
+// DELETE - Eliminar cliente (solo admin)
 // ============================================
 if ($method === 'DELETE' && !isset($_GET['action'])) {
+    if ($usuario['rol'] !== 'admin') {
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para eliminar clientes']);
+        exit;
+    }
+    
     $data = json_decode(file_get_contents('php://input'), true);
     $id = $data['id'] ?? 0;
     
@@ -324,12 +366,6 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
         exit;
     }
     
-    if ($usuario['rol'] !== 'admin') {
-        echo json_encode(['success' => false, 'error' => 'No tienes permiso para eliminar clientes']);
-        exit;
-    }
-    
-    // Obtener datos del cliente antes de eliminar
     $stmtNombre = $conn->prepare("SELECT nombre, email FROM usuarios WHERE id = ? AND rol = 'client'");
     $stmtNombre->bind_param("i", $id);
     $stmtNombre->execute();
@@ -338,19 +374,6 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
     
     if (!$cliente) {
         echo json_encode(['success' => false, 'error' => 'Cliente no encontrado']);
-        exit;
-    }
-    
-    // Verificar si tiene citas pendientes
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM citas WHERE cliente_id = ? AND fecha >= CURDATE() AND estado NOT IN ('cancelada', 'completada')");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $citas_pendientes = $result->fetch_assoc()['total'];
-    $stmt->close();
-    
-    if ($citas_pendientes > 0) {
-        echo json_encode(['success' => false, 'error' => "No se puede eliminar el cliente porque tiene {$citas_pendientes} citas pendientes"]);
         exit;
     }
     
@@ -377,11 +400,6 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
         $stmt->execute();
         $stmt->close();
         
-        $stmt = $conn->prepare("DELETE FROM tokens_enviados WHERE usuario_id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $stmt->close();
-        
         $stmt = $conn->prepare("DELETE FROM usuarios WHERE id = ? AND rol = 'client'");
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -401,37 +419,28 @@ if ($method === 'DELETE' && !isset($_GET['action'])) {
 }
 
 // ============================================
-// DELETE - Eliminar mascota
+// GET - Verificar si un cliente existe (para debug)
 // ============================================
-if ($method === 'DELETE' && isset($_GET['action']) && $_GET['action'] === 'mascota_cliente') {
-    $data = json_decode(file_get_contents('php://input'), true);
-    $mascota_id = intval($data['mascota_id'] ?? 0);
+if ($method === 'GET' && $action === 'verificar') {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
     
-    if ($mascota_id <= 0) {
-        echo json_encode(['success' => false, 'error' => 'ID inválido']);
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'ID requerido']);
         exit;
     }
     
-    // Verificar que no tenga citas pendientes
-    $stmt = $conn->prepare("SELECT id FROM citas WHERE mascota_id = ? AND fecha >= CURDATE() AND estado NOT IN ('cancelada', 'completada')");
-    $stmt->bind_param("i", $mascota_id);
+    $stmt = $conn->prepare("SELECT id, nombre, email, telefono, puntos, activo FROM usuarios WHERE id = ? AND rol = 'client'");
+    $stmt->bind_param("i", $id);
     $stmt->execute();
-    if ($stmt->get_result()->num_rows > 0) {
-        echo json_encode(['success' => false, 'error' => 'No se puede eliminar la mascota porque tiene citas programadas']);
-        exit;
-    }
+    $result = $stmt->get_result();
+    $cliente = $result->fetch_assoc();
     $stmt->close();
     
-    $stmt = $conn->prepare("DELETE FROM mascotas WHERE id = ?");
-    $stmt->bind_param("i", $mascota_id);
-    
-    if ($stmt->execute()) {
-        guardarLog($conn, 'delete', 'Mascota eliminada', "ID: {$mascota_id}");
-        echo json_encode(['success' => true, 'message' => 'Mascota eliminada correctamente']);
+    if ($cliente) {
+        echo json_encode(['success' => true, 'cliente' => $cliente]);
     } else {
-        echo json_encode(['success' => false, 'error' => $stmt->error]);
+        echo json_encode(['success' => false, 'error' => 'Cliente no encontrado']);
     }
-    $stmt->close();
     exit;
 }
 

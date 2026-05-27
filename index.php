@@ -900,6 +900,126 @@ tr:hover td { background: var(--cream); }
         <div id="tab-mascotas" style="display:none">
           <div id="mascotasGrid" class="products-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>
         </div>
+
+                <!-- Mis Mascotas (VERSIÓN DINÁMICA) -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Mis Mascotas</div>
+                <button class="btn btn-sm btn-teal" onclick="abrirModalMascotaCliente()">➕ Agregar</button>
+            </div>
+            
+            <!-- Indicador de mascota seleccionada -->
+            <div style="margin-bottom: 15px; padding: 10px; background: var(--teal-pale); border-radius: 10px;" id="mascotaSeleccionadaContainer">
+                <div style="font-size: 0.8rem; color: var(--gray);">🐾 Mascota actual</div>
+                <div style="font-weight: bold; font-size: 1rem;" id="mascotaSeleccionadaTitulo">Ninguna mascota seleccionada</div>
+            </div>
+            
+            <div id="mascotasClienteContainer">
+                <div class="loading">Cargando mascotas...</div>
+            </div>
+        </div>
+
+                <!-- Sección de Carnet de Vacunas -->
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">
+                <div class="card-title">💉 Carnet de Vacunas</div>
+                <button class="btn btn-sm btn-teal" onclick="abrirModalVacuna()">➕ Registrar Vacuna</button>
+            </div>
+            
+            <!-- Resumen de vacunación -->
+            <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card teal">
+                    <div class="stat-icon">💉</div>
+                    <div class="stat-label">Total Vacunas</div>
+                    <div class="stat-value" id="totalVacunas">0</div>
+                </div>
+                <div class="stat-card rust">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-label">Vencidas</div>
+                    <div class="stat-value" id="vacunasVencidas">0</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-label">Próximas</div>
+                    <div class="stat-value" id="vacunasProximas">0</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-label">Al día</div>
+                    <div class="stat-value" id="vacunasAlDia">0</div>
+                </div>
+            </div>
+            
+            <!-- Tabla de vacunas -->
+            <div class="table-wrap">
+                <table id="vacunasTable" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Vacuna</th>
+                            <th>Fecha Aplicación</th>
+                            <th>Próxima Dosis</th>
+                            <th>Lote</th>
+                            <th>Veterinario</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vacunasBody">
+                        <tr><td colspan="7" class="loading">Selecciona una mascota para ver su cartilla</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal Registrar Vacuna -->
+        <div class="modal-overlay hidden" id="modalRegistrarVacuna">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">💉 Registrar Vacuna</h3>
+                    <button class="modal-close" onclick="closeModal('modalRegistrarVacuna')">×</button>
+                </div>
+                
+                <input type="hidden" id="vacunaMascotaId">
+                
+                <div class="form-row">
+                    <div class="form-col input-group">
+                        <label>Vacuna *</label>
+                        <select id="vacunaSelect">
+                            <option value="">Seleccione una vacuna...</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col input-group">
+                        <label>Fecha de Aplicación *</label>
+                        <input type="date" id="vacunaFecha">
+                    </div>
+                    <div class="form-col input-group">
+                        <label>Lote</label>
+                        <input type="text" id="vacunaLote" placeholder="Número de lote">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col input-group">
+                        <label>Veterinario</label>
+                        <input type="text" id="vacunaVeterinario" placeholder="Nombre del veterinario">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Observaciones</label>
+                    <textarea id="vacunaObservaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn btn-outline" onclick="closeModal('modalRegistrarVacuna')">Cancelar</button>
+                    <button class="btn btn-teal" onclick="guardarVacuna()">💾 Guardar Vacuna</button>
+                </div>
+            </div>
+        </div>
+
         <div id="tab-historial" style="display:none">
           <div class="card">
             <div class="card-header"><div class="card-title">Historial Completo — Mishi (🐈)</div><span class="badge badge-teal">8 servicios</span></div>
@@ -1101,6 +1221,7 @@ tr:hover td { background: var(--cream); }
         </div>
       </div>
 
+
 <!-- MI CUENTA (cliente) -->
 <div id="page-micuenta" class="page">
     <div class="page-header">
@@ -1110,19 +1231,29 @@ tr:hover td { background: var(--cream); }
             <button class="btn btn-teal" onclick="openModal('modalNuevaCita')">📅 Agendar Cita</button>
         </div>
     </div>
+    
     <div class="stats-grid">
         <div class="stat-card teal"><div class="stat-icon">📅</div><div class="stat-label">Próxima Cita</div><div class="stat-value">17/05</div><div class="stat-change">10:00 AM</div></div>
         <div class="stat-card caramel"><div class="stat-icon">🐾</div><div class="stat-label">Mis Mascotas</div><div class="stat-value" id="totalMascotasCliente">0</div><div class="stat-change" id="primeraMascotaCliente">-</div></div>
         <div class="stat-card gold"><div class="stat-icon">🏆</div><div class="stat-label">Visitas Totales</div><div class="stat-value">8</div><div class="stat-change up">↑ Desde 2024</div></div>
         <div class="stat-card rust"><div class="stat-icon">⭐</div><div class="stat-label">Puntos Gold</div><div class="stat-value">1,240</div><div class="stat-change up">Nivel Gold ⭐</div></div>
     </div>
+    
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        
         <!-- Mis Citas Recientes -->
         <div class="card">
-            <div class="card-header"><div class="card-title">Mis Citas Recientes</div></div>
+            <div class="card-header"><div class="card-title">📋 Mis Citas Recientes</div></div>
             <div class="table-wrap">
                 <table style="width:100%">
-                    <thead><tr><th>Fecha</th><th>Mascota</th><th>Servicio</th><th>Estado</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Mascota</th>
+                            <th>Servicio</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
                     <tbody id="citasClienteTable">
                         <tr><td colspan="4" class="loading">Cargando citas...</td></tr>
                     </tbody>
@@ -1130,21 +1261,81 @@ tr:hover td { background: var(--cream); }
             </div>
         </div>
         
-        <!-- Mis Mascotas (VERSIÓN DINÁMICA) -->
+        <!-- Mis Mascotas (VERSIÓN CLIENTE) -->
         <div class="card">
             <div class="card-header">
-                <div class="card-title">Mis Mascotas</div>
+                <div class="card-title">🐾 Mis Mascotas</div>
                 <button class="btn btn-sm btn-teal" onclick="abrirModalMascotaCliente()">➕ Agregar</button>
             </div>
+            
+            <!-- Mascota seleccionada actualmente -->
+            <div style="margin-bottom: 15px; padding: 12px; background: linear-gradient(135deg, var(--teal-pale), var(--cream)); border-radius: 12px;">
+                <div style="font-size: 0.7rem; color: var(--gray); text-transform: uppercase; letter-spacing: 1px;">🐾 MASCOTA SELECCIONADA</div>
+                <div style="font-weight: bold; font-size: 1rem; margin-top: 4px; color: var(--teal);" id="mascotaSeleccionadaTituloCliente">Ninguna</div>
+            </div>
+            
+            <!-- Contenedor de lista de mascotas -->
             <div id="mascotasClienteContainer">
                 <div class="loading">Cargando mascotas...</div>
             </div>
         </div>
     </div>
     
+    <!-- Sección de Carnet de Vacunas -->
+    <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+            <div class="card-title">💉 Carnet de Vacunas</div>
+            <button class="btn btn-sm btn-teal" onclick="abrirModalVacuna()">➕ Registrar Vacuna</button>
+        </div>
+        
+        <!-- Resumen de vacunación -->
+        <div class="stats-grid" style="margin-bottom: 20px; grid-template-columns: repeat(4, 1fr);">
+            <div class="stat-card teal">
+                <div class="stat-icon">💉</div>
+                <div class="stat-label">Total Vacunas</div>
+                <div class="stat-value" id="totalVacunasCliente">0</div>
+            </div>
+            <div class="stat-card rust">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-label">Vencidas</div>
+                <div class="stat-value" id="vacunasVencidasCliente">0</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon">📅</div>
+                <div class="stat-label">Próximas</div>
+                <div class="stat-value" id="vacunasProximasCliente">0</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon">✅</div>
+                <div class="stat-label">Al día</div>
+                <div class="stat-value" id="vacunasAlDiaCliente">0</div>
+            </div>
+        </div>
+        
+        <!-- Tabla de vacunas -->
+        <div class="table-wrap">
+            <table id="vacunasTableCliente" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Vacuna</th>
+                        <th>Fecha Aplicación</th>
+                        <th>Próxima Dosis</th>
+                        <th>Lote</th>
+                        <th>Veterinario</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="vacunasBodyCliente">
+                    <tr><td colspan="7" class="loading">Selecciona una mascota para ver su cartilla</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
     <!-- Calificar Último Servicio -->
     <div class="card" style="margin-top:20px">
-        <div class="card-header"><div class="card-title">Calificar Último Servicio</div></div>
+        <div class="card-header"><div class="card-title">⭐ Calificar Último Servicio</div></div>
         <p style="font-size:.88rem;color:var(--gray);margin-bottom:14px">¿Cómo fue tu experiencia en PawSpa? — Mishi · 10/05/2025</p>
         <div class="star-rating">
             <span class="star active" onclick="rateStar(1)">⭐</span>
@@ -1158,9 +1349,6 @@ tr:hover td { background: var(--cream); }
     </div>
 </div>
 
-    </div><!-- /main-content -->
-  </div><!-- /app-body -->
-</div><!-- /app -->
 
 <!-- CART SIDEBAR -->
 <div class="cart-panel" id="cartPanel">
@@ -2144,6 +2332,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         initApp('client');
     }
 });
+
+if (typeof cargarVacunasLista === 'function') {
+    cargarVacunasLista();
+}
+
 
 // ============================================
 // NAVEGACIÓN
@@ -3513,7 +3706,7 @@ async function doRegistro() {
 // MASCOTAS DEL CLIENTE (Desde su panel)
 // ============================================
 
-// Cargar mascotas del cliente logueado (CORREGIDO)
+// Cargar mascotas del cliente logueado
 async function cargarMascotasCliente() {
     if (!currentUser || !currentUser.id) {
         console.log('No hay usuario logueado');
@@ -3521,55 +3714,103 @@ async function cargarMascotasCliente() {
     }
     
     const container = document.getElementById('mascotasClienteContainer');
-    if (!container) return;
+    if (!container) {
+        console.error('❌ Contenedor mascotasClienteContainer no encontrado');
+        return;
+    }
     
     container.innerHTML = '<div class="loading">Cargando mascotas...</div>';
     
     try {
-        // Usar el endpoint correcto
         const response = await fetch(`${API_URL}clientes.php?action=mascotas_cliente&cliente_id=${currentUser.id}`);
         const data = await response.json();
         
-        console.log('Mascotas cargadas:', data);
+        console.log('📦 Mascotas recibidas:', data);
         
-        if (data.success && data.mascotas) {
-            if (data.mascotas.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align:center; padding:20px; color:var(--gray)">
-                        🐾 No tienes mascotas registradas.<br>
-                        <button class="btn btn-sm btn-teal" style="margin-top:10px" onclick="abrirModalMascotaCliente()">➕ Agregar tu primera mascota</button>
+        if (data.success && data.mascotas && data.mascotas.length > 0) {
+            window.mascotasCliente = data.mascotas;
+            
+            // Actualizar contador
+            const totalEl = document.getElementById('totalMascotasCliente');
+            if (totalEl) totalEl.textContent = data.mascotas.length;
+            
+            // Generar HTML
+            let html = '';
+            data.mascotas.forEach(m => {
+                const especieIcon = m.especie === 'perro' ? '🐕' : (m.especie === 'gato' ? '🐈' : '🐾');
+                html += `
+                    <div onclick="seleccionarMascota(${m.id})" style="
+                        padding: 12px; 
+                        margin-bottom: 8px; 
+                        background: white; 
+                        border: 1px solid #e0e0e0; 
+                        border-radius: 10px; 
+                        cursor: pointer;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div>
+                            <div style="font-weight: bold; font-size: 1rem;">${escapeHtml(m.nombre)}</div>
+                            <div style="font-size: 0.75rem; color: #666;">${escapeHtml(m.raza || 'Sin raza')} · ${m.edad || '?'} años</div>
+                        </div>
+                        <div style="font-size: 1.8rem;">${especieIcon}</div>
                     </div>
                 `;
-                return;
-            }
+            });
             
-            container.innerHTML = data.mascotas.map(m => `
-                <div class="pet-card" style="margin-bottom:12px; padding:12px; display:flex; gap:12px; align-items:flex-start">
-                    <div class="pet-avatar" style="width:45px; height:45px; font-size:1.5rem; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--caramel),var(--teal)); border-radius:50%">
-                        ${m.especie === 'perro' ? '🐕' : (m.especie === 'gato' ? '🐈' : '🐾')}
-                    </div>
-                    <div class="pet-info" style="flex:1">
-                        <h4 style="font-size:.95rem">${escapeHtml(m.nombre)}</h4>
-                        <p style="font-size:.75rem; color:var(--gray)">
-                            ${m.raza || 'Sin raza'} · ${m.edad || '?'} años · ${m.peso || '?'} kg
-                        </p>
-                        ${m.alergias ? `<span class="badge badge-red" style="font-size:.7rem">⚠️ ${escapeHtml(m.alergias.substring(0,30))}</span>` : ''}
-                    </div>
-                    <div class="pet-actions" style="display:flex; gap:5px">
-                        <button class="btn btn-sm btn-ghost" onclick="editarMascotaCliente(${m.id})">✏️</button>
-                        <button class="btn btn-sm btn-ghost" onclick="eliminarMascotaCliente(${m.id})">🗑️</button>
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = html;
+            
+            // Seleccionar primera mascota
+            if (data.mascotas[0]) {
+                seleccionarMascota(data.mascotas[0].id);
+            }
         } else {
-            container.innerHTML = '<div class="error">Error al cargar mascotas: ' + (data.error || 'Desconocido') + '</div>';
+            container.innerHTML = `
+                <div style="text-align:center; padding:30px; color:#666;">
+                    🐾 No tienes mascotas registradas.<br>
+                    <button class="btn btn-teal btn-sm" style="margin-top:15px;" onclick="abrirModalMascotaCliente()">➕ Agregar tu primera mascota</button>
+                </div>
+            `;
         }
     } catch (error) {
-        console.error('Error cargando mascotas:', error);
-        container.innerHTML = '<div class="error">Error de conexión al cargar mascotas</div>';
+        console.error('Error:', error);
+        container.innerHTML = '<div class="error">Error de conexión</div>';
     }
 }
 
+// Variable global para la mascota seleccionada
+
+let mascotaSeleccionada = null;
+
+// Seleccionar mascota y cargar su cartilla de vacunas
+function seleccionarMascota(mascotaId) {
+    console.log('🐾 Seleccionando mascota ID:', mascotaId);
+    
+    const mascota = window.mascotasCliente?.find(m => parseInt(m.id) === parseInt(mascotaId));
+    
+    if (!mascota) {
+        console.error('Mascota no encontrada:', mascotaId);
+        showToast('❌ Mascota no encontrada', 'error');
+        return;
+    }
+    
+    mascotaActual = mascotaId;
+    
+    // Actualizar el título (usar el ID correcto)
+    const tituloMascota = document.getElementById('mascotaSeleccionadaTituloCliente');
+    if (tituloMascota) {
+        const especieIcon = mascota.especie === 'perro' ? '🐕' : '🐈';
+        tituloMascota.innerHTML = `${especieIcon} ${escapeHtml(mascota.nombre)} - ${mascota.raza || 'Sin raza'}`;
+    }
+    
+    // Cargar cartilla de vacunas
+    if (typeof cargarCartillaVacunas === 'function') {
+        cargarCartillaVacunas(mascotaId);
+    }
+    
+    showToast(`🐾 Mascota seleccionada: ${mascota.nombre}`, 'success');
+}
 // Abrir modal para agregar mascota (cliente)
 function abrirModalMascotaCliente() {
     document.getElementById('modalMascotaClienteTitle').textContent = '➕ Nueva Mascota';
@@ -4344,6 +4585,185 @@ function doLogout() {
     }).finally(() => {
         window.location.href = 'index.php';
     });
+}
+
+// ============================================
+// FUNCIONES PARA CARNET DE VACUNAS
+// ============================================
+
+let mascotaActual = null;
+
+// Cargar cartilla de vacunas de una mascota
+async function cargarCartillaVacunas(mascotaId) {
+    mascotaActual = mascotaId;
+    
+    try {
+        // Cargar estadísticas
+        const statsResponse = await fetch(`${API_URL}vacunas.php?action=estadisticas&mascota_id=${mascotaId}`);
+        const statsData = await statsResponse.json();
+        
+        if (statsData.success) {
+            document.getElementById('totalVacunas').textContent = statsData.estadisticas.total_vacunas || 0;
+            document.getElementById('vacunasVencidas').textContent = statsData.estadisticas.vencidas || 0;
+            document.getElementById('vacunasProximas').textContent = statsData.estadisticas.proximas || 0;
+            const alDia = (statsData.estadisticas.total_vacunas || 0) - (statsData.estadisticas.vencidas || 0);
+            document.getElementById('vacunasAlDia').textContent = alDia;
+        }
+        
+        // Cargar cartilla
+        const cartillaResponse = await fetch(`${API_URL}vacunas.php?action=cartilla&mascota_id=${mascotaId}`);
+        const cartillaData = await cartillaResponse.json();
+        
+        if (cartillaData.success && cartillaData.cartilla) {
+            const tbody = document.getElementById('vacunasBody');
+            
+            if (cartillaData.cartilla.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="loading">No hay vacunas registradas</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = cartillaData.cartilla.map(v => {
+                let estadoClass = '';
+                let estadoTexto = '';
+                
+                if (v.estado === 'vencida') {
+                    estadoClass = 'badge-red';
+                    estadoTexto = '⚠️ Vencida';
+                } else if (v.estado === 'proxima') {
+                    estadoClass = 'badge-orange';
+                    estadoTexto = '📅 Próxima';
+                } else {
+                    estadoClass = 'badge-green';
+                    estadoTexto = '✅ Al día';
+                }
+                
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(v.vacuna_nombre)}</strong><br><small>${escapeHtml(v.descripcion || '')}</small></td>
+                        <td>${v.fecha_aplicacion}</td>
+                        <td>${v.fecha_proxima || 'No definida'}</td>
+                        <td>${escapeHtml(v.lote || '-')}</td>
+                        <td>${escapeHtml(v.veterinario || '-')}</td>
+                        <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarRegistroVacuna(${v.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('Error cargando cartilla:', error);
+        document.getElementById('vacunasBody').innerHTML = '<tr><td colspan="7" class="error">Error al cargar datos</td></tr>';
+    }
+}
+
+// Abrir modal para registrar vacuna
+async function abrirModalVacuna() {
+    if (!mascotaActual) {
+        showToast('❌ Primero selecciona una mascota', 'error');
+        return;
+    }
+    
+    // Cargar lista de vacunas
+    try {
+        const response = await fetch(`${API_URL}vacunas.php?action=lista`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const select = document.getElementById('vacunaSelect');
+            select.innerHTML = '<option value="">Seleccione una vacuna...</option>';
+            data.vacunas.forEach(v => {
+                select.innerHTML += `<option value="${v.id}">${escapeHtml(v.nombre)} - ${v.periodo_dias ? `Refuerzo cada ${v.periodo_dias} días` : 'Sin refuerzo'}</option>`;
+            });
+        }
+    } catch (error) {
+        console.error('Error cargando vacunas:', error);
+    }
+    
+    document.getElementById('vacunaMascotaId').value = mascotaActual;
+    document.getElementById('vacunaFecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('vacunaLote').value = '';
+    document.getElementById('vacunaVeterinario').value = '';
+    document.getElementById('vacunaObservaciones').value = '';
+    
+    openModal('modalRegistrarVacuna');
+}
+
+// Guardar registro de vacuna
+async function guardarVacuna() {
+    const mascota_id = document.getElementById('vacunaMascotaId').value;
+    const vacuna_id = document.getElementById('vacunaSelect').value;
+    const fecha_aplicacion = document.getElementById('vacunaFecha').value;
+    const lote = document.getElementById('vacunaLote').value;
+    const veterinario = document.getElementById('vacunaVeterinario').value;
+    const observaciones = document.getElementById('vacunaObservaciones').value;
+    
+    if (!vacuna_id || !fecha_aplicacion) {
+        showToast('❌ Vacuna y fecha son requeridas', 'error');
+        return;
+    }
+    
+    const btn = document.querySelector('#modalRegistrarVacuna .btn-teal');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Guardando...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`${API_URL}vacunas.php?action=registrar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mascota_id: mascota_id,
+                vacuna_id: vacuna_id,
+                fecha_aplicacion: fecha_aplicacion,
+                lote: lote,
+                veterinario: veterinario,
+                observaciones: observaciones
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('✅ Vacuna registrada correctamente', 'success');
+            closeModal('modalRegistrarVacuna');
+            cargarCartillaVacunas(mascotaActual);
+        } else {
+            showToast('❌ Error: ' + (data.error || 'No se pudo registrar'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Eliminar registro de vacuna
+async function eliminarRegistroVacuna(cartillaId) {
+    if (!confirm('¿Eliminar este registro de vacuna?')) return;
+    
+    try {
+        const response = await fetch(`${API_URL}vacunas.php?action=eliminar`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cartilla_id: cartillaId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('✅ Registro eliminado', 'success');
+            cargarCartillaVacunas(mascotaActual);
+        } else {
+            showToast('❌ Error: ' + (data.error || 'No se pudo eliminar'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión', 'error');
+    }
 }
 
 </script>
