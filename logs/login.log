@@ -68,3 +68,6 @@
 [2026-05-22 21:32:24] FALLO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | Error: Cuenta no verificada | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
 [2026-05-22 21:33:36] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
 [2026-05-23 03:18:28] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-27 21:08:18] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[2026-05-27 22:42:44] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[2026-05-27 23:26:47] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36

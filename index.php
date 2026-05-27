@@ -2037,18 +2037,10 @@ async function doLogin() {
     const captchaToken = grecaptcha ? grecaptcha.getResponse() : '';
     
     const errorDiv = document.getElementById('loginError');
-    const intentosDiv = document.getElementById('intentosRestantes');
-    
     errorDiv.style.display = 'none';
-    if (intentosDiv) intentosDiv.style.display = 'none';
     
     if (!email || !password) {
         showLoginError('Por favor ingresa email y contraseña');
-        return;
-    }
-    
-    if (!captchaToken) {
-        showLoginError('Por favor completa el reCAPTCHA');
         return;
     }
     
@@ -2065,49 +2057,17 @@ async function doLogin() {
         });
         
         const data = await response.json();
+        console.log('Respuesta:', data);
         
         if (data.success) {
-            // Recargar la página para que PHP detecte la nueva sesión
+            if (data.token) {
+                localStorage.setItem('jwt_token', data.token);
+            }
+            localStorage.setItem('user', JSON.stringify(data.user));
             window.location.href = 'index.php';
         } else {
-            // Mostrar error con información de intentos restantes si está disponible
-            let errorMessage = data.error || 'Error de autenticación';
-            
-            // Si hay información de intentos restantes, mostrarla
-            if (data.intentos_restantes !== undefined) {
-                errorMessage += `\n⚠️ Te quedan ${data.intentos_restantes} intentos antes del bloqueo.`;
-                
-                // Mostrar en el div específico de intentos
-                if (intentosDiv) {
-                    intentosDiv.textContent = `⚠️ Te quedan ${data.intentos_restantes} intentos antes del bloqueo por 15 minutos.`;
-                    intentosDiv.style.display = 'block';
-                    intentosDiv.style.background = '#FFF3E8';
-                    intentosDiv.style.color = '#C9956A';
-                    intentosDiv.style.padding = '8px 12px';
-                    intentosDiv.style.borderRadius = '8px';
-                    intentosDiv.style.marginTop = '8px';
-                    intentosDiv.style.fontSize = '.75rem';
-                    intentosDiv.style.textAlign = 'center';
-                }
-            }
-            
-            // Si la cuenta está bloqueada, mostrar mensaje especial
-            if (data.bloqueado === true) {
-                errorMessage = '❌ Demasiados intentos fallidos. Cuenta bloqueada por 15 minutos.';
-                if (intentosDiv) {
-                    intentosDiv.textContent = '🔒 Cuenta temporalmente bloqueada. Espera 15 minutos para intentar nuevamente.';
-                    intentosDiv.style.display = 'block';
-                    intentosDiv.style.background = '#FFEDED';
-                    intentosDiv.style.color = '#C4532A';
-                }
-            }
-            
-            showLoginError(errorMessage);
-            
-            // Limpiar el campo de contraseña por seguridad
+            showLoginError(data.error || 'Error de autenticación');
             document.getElementById('loginPass').value = '';
-            document.getElementById('loginPass').focus();
-            
             if (grecaptcha) grecaptcha.reset();
         }
     } catch (error) {
@@ -2118,6 +2078,17 @@ async function doLogin() {
         btn.textContent = originalText;
         btn.disabled = false;
     }
+}
+
+function doLogout() {
+    eliminarToken();
+    
+    fetch(API_URL + 'logout.php', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).finally(() => {
+        window.location.href = 'index.php';
+    });
 }
 
 function showLoginError(msg) {
@@ -2268,14 +2239,15 @@ async function cargarCitasSemana() {
     console.log('📅 Cargando citas desde:', fechaInicio, 'hasta:', fechaFin);
     
     try {
-        // USAR EL ENDPOINT CON RANGO DE FECHAS
-        const response = await fetch(`${API_URL}citas.php?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`);
-        const data = await response.json();
+        // Usar fetchAuth para incluir el token JWT
+        const response = await fetchAuth(`${API_URL}citas.php?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`);
         
+        if (!response) return;
+        
+        const data = await response.json();
         console.log('📦 Citas de la semana:', data);
         
         if (data.success && data.citas) {
-            // Filtrar solo citas con fecha válida (no 0000-00-00)
             citasSemana = data.citas.filter(c => {
                 return c.fecha && c.fecha !== '0000-00-00' && c.fecha !== '00:00:00';
             });
@@ -4245,6 +4217,133 @@ async function cancelarCitaBD(citaId) {
         console.error('Error:', error);
         showToast('❌ Error de conexión', 'error');
     }
+}
+
+// ============================================
+// MANEJO DE JWT
+// ============================================
+
+// Guardar token en localStorage
+function guardarToken(token) {
+    localStorage.setItem('jwt_token', token);
+}
+
+// Obtener token
+function obtenerToken() {
+    return localStorage.getItem('jwt_token');
+}
+
+// Eliminar token
+function eliminarToken() {
+    localStorage.removeItem('jwt_token');
+}
+
+// Función para hacer fetch con autenticación JWT
+async function fetchAuth(url, options = {}) {
+    const token = obtenerToken();
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(url, {
+        ...options,
+        headers: headers
+    });
+    
+    // Si el token expiró (401), redirigir al login
+    if (response.status === 401) {
+        eliminarToken();
+        window.location.href = 'index.php';
+        return null;
+    }
+    
+    return response;
+}
+
+// Actualizar función doLogin para guardar el token
+async function doLogin() {
+    const email = document.getElementById('loginUser').value;
+    const password = document.getElementById('loginPass').value;
+    const role = document.getElementById('loginRole').value;
+    const captchaToken = grecaptcha ? grecaptcha.getResponse() : '';
+    
+    const errorDiv = document.getElementById('loginError');
+    const intentosDiv = document.getElementById('intentosRestantes');
+    
+    errorDiv.style.display = 'none';
+    if (intentosDiv) intentosDiv.style.display = 'none';
+    
+    if (!email || !password) {
+        showLoginError('Por favor ingresa email y contraseña');
+        return;
+    }
+    
+    if (!captchaToken) {
+        showLoginError('Por favor completa el reCAPTCHA');
+        return;
+    }
+    
+    const btn = document.querySelector('.btn-primary');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Verificando...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(API_URL + 'login.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, role, captcha_token: captchaToken })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Guardar token JWT
+            if (data.token) {
+                guardarToken(data.token);
+            }
+            
+            // Recargar la página
+            window.location.href = 'index.php';
+        } else {
+            // Mostrar error...
+            let errorMessage = data.error || 'Error de autenticación';
+            
+            if (data.intentos_restantes !== undefined && intentosDiv) {
+                intentosDiv.textContent = `⚠️ Te quedan ${data.intentos_restantes} intentos antes del bloqueo.`;
+                intentosDiv.style.display = 'block';
+            }
+            
+            showLoginError(errorMessage);
+            document.getElementById('loginPass').value = '';
+            if (grecaptcha) grecaptcha.reset();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showLoginError('Error de conexión con el servidor');
+        if (grecaptcha) grecaptcha.reset();
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Actualizar doLogout
+function doLogout() {
+    eliminarToken();
+    
+    fetch(API_URL + 'logout.php', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).finally(() => {
+        window.location.href = 'index.php';
+    });
 }
 
 </script>

@@ -1,6 +1,15 @@
 {
     "require": {
         "maildrop/maildrop-php": "^1.4",
-        "symfony/mime": "^8.0"
+        "symfony/mime": "^8.0",
+        "firebase/php-jwt": "6.10.2"
+    },
+    "config": {
+        "audit": {
+            "block-insecure": false
+        },
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        }
     }
 }
