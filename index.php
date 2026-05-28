@@ -2608,7 +2608,8 @@ function initApp(role) {
   navigateTo(defaultPage);
 
   if (role === 'client') {
-  cargarMascotasCliente();  // <-- AGREGAR ESTA LÍNEA
+  cargarMascotasCliente();  
+  cargarCitasCliente();
   }
 
 }
@@ -3722,6 +3723,7 @@ async function cargarMascotasCliente() {
     container.innerHTML = '<div class="loading">Cargando mascotas...</div>';
     
     try {
+        // Usar el endpoint correcto con el ID del cliente
         const response = await fetch(`${API_URL}clientes.php?action=mascotas_cliente&cliente_id=${currentUser.id}`);
         const data = await response.json();
         
@@ -3734,7 +3736,7 @@ async function cargarMascotasCliente() {
             const totalEl = document.getElementById('totalMascotasCliente');
             if (totalEl) totalEl.textContent = data.mascotas.length;
             
-            // Generar HTML
+            // Generar HTML de mascotas
             let html = '';
             data.mascotas.forEach(m => {
                 const especieIcon = m.especie === 'perro' ? '🐕' : (m.especie === 'gato' ? '🐈' : '🐾');
@@ -3761,7 +3763,7 @@ async function cargarMascotasCliente() {
             
             container.innerHTML = html;
             
-            // Seleccionar primera mascota
+            // Seleccionar primera mascota automáticamente
             if (data.mascotas[0]) {
                 seleccionarMascota(data.mascotas[0].id);
             }
@@ -3774,8 +3776,8 @@ async function cargarMascotasCliente() {
             `;
         }
     } catch (error) {
-        console.error('Error:', error);
-        container.innerHTML = '<div class="error">Error de conexión</div>';
+        console.error('Error cargando mascotas:', error);
+        container.innerHTML = '<div class="error">Error de conexión al cargar mascotas</div>';
     }
 }
 
@@ -3811,6 +3813,7 @@ function seleccionarMascota(mascotaId) {
     
     showToast(`🐾 Mascota seleccionada: ${mascota.nombre}`, 'success');
 }
+
 // Abrir modal para agregar mascota (cliente)
 function abrirModalMascotaCliente() {
     document.getElementById('modalMascotaClienteTitle').textContent = '➕ Nueva Mascota';
@@ -4050,57 +4053,132 @@ let nuevaCitaFecha = '';
 let nuevaCitaHora = '';
 
 // ============================================
-// ABRIR MODAL NUEVA CITA (CORREGIDO)
+// ABRIR MODAL NUEVA CITA (VERSIÓN CORREGIDA)
 // ============================================
-function abrirModalNuevaCita(fecha, hora) {
-    console.log('🔵🔵🔵 ABRIENDO MODAL CON:', { fecha, hora });
+async function abrirModalNuevaCita(fecha, hora) {
+    console.log('🔵 ABRIENDO MODAL - Usuario:', currentUser);
+    console.log('IS_CLIENT:', IS_CLIENT);
+    console.log('IS_ADMIN:', IS_ADMIN);
     
-    if (!fecha || !hora) {
-        console.error('❌ Fecha u hora no definidas:', { fecha, hora });
-        showToast('Error al abrir el modal: fecha u hora no definidas', 'error');
-        return;
-    }
+    // Guardar fecha y hora
+    window.nuevaCitaFecha = fecha || '';
+    window.nuevaCitaHora = hora || '';
     
-    // Guardar en variables globales
-    nuevaCitaFecha = fecha;
-    nuevaCitaHora = hora;
-    
-    console.log('✅ Variables globales guardadas:');
-    console.log('  nuevaCitaFecha:', nuevaCitaFecha);
-    console.log('  nuevaCitaHora:', nuevaCitaHora);
-    
-    // Asignar a los inputs del modal
     const fechaInput = document.getElementById('citaFecha');
     const horaInput = document.getElementById('citaHora');
-    const obsInput = document.getElementById('citaObs');
     
-    if (fechaInput) {
-        fechaInput.value = fecha;
-        console.log('  Input fecha asignado:', fechaInput.value);
+    if (fechaInput && window.nuevaCitaFecha) {
+        fechaInput.value = window.nuevaCitaFecha;
     }
-    if (horaInput) {
-        horaInput.value = hora;
-        console.log('  Input hora asignado:', horaInput.value);
+    if (horaInput && window.nuevaCitaHora) {
+        horaInput.value = window.nuevaCitaHora;
     }
+    
+    // Limpiar observaciones
+    const obsInput = document.getElementById('citaObs');
     if (obsInput) obsInput.value = '';
     
-    // Resetear selects
-    const selectCliente = document.getElementById('citaClienteSelect');
-    const selectMascota = document.getElementById('citaMascotaSelect');
-    
-    if (selectCliente) selectCliente.value = '';
-    if (selectMascota) {
-        selectMascota.innerHTML = '<option value="">🔍 Primero seleccione un cliente</option>';
-        selectMascota.disabled = true;
+    // ============================================
+    // CASO 1: ES CLIENTE
+    // ============================================
+    if (IS_CLIENT && currentUser && currentUser.id) {
+        console.log('👤 Modo Cliente - ID:', currentUser.id);
+        
+        // Crear u obtener campo oculto con el ID del cliente
+        let hiddenClienteId = document.getElementById('hiddenClienteId');
+        if (!hiddenClienteId) {
+            hiddenClienteId = document.createElement('input');
+            hiddenClienteId.type = 'hidden';
+            hiddenClienteId.id = 'hiddenClienteId';
+            hiddenClienteId.value = currentUser.id;
+            const selectCliente = document.getElementById('citaClienteSelect');
+            if (selectCliente && selectCliente.parentNode) {
+                selectCliente.parentNode.appendChild(hiddenClienteId);
+            }
+        } else {
+            hiddenClienteId.value = currentUser.id;
+        }
+        
+        // OCULTAR completamente el select de cliente
+        const selectCliente = document.getElementById('citaClienteSelect');
+        if (selectCliente) {
+            selectCliente.style.display = 'none';
+            const labelCliente = selectCliente.closest('.input-group')?.querySelector('label');
+            if (labelCliente) labelCliente.style.display = 'none';
+            // También ocultar el contenedor si es necesario
+            const rowCliente = selectCliente.closest('.form-row');
+            if (rowCliente) rowCliente.style.display = 'none';
+        }
+        
+        // Cargar mascotas del cliente actual
+        await cargarMascotasClienteParaCita(currentUser.id);
+        
+    } 
+    // ============================================
+    // CASO 2: ES ADMIN O RECEPCIONISTA
+    // ============================================
+    else if (IS_ADMIN || IS_RECEP) {
+        console.log('👤 Modo Admin/Recepcionista');
+        
+        // Mostrar select de cliente
+        const selectCliente = document.getElementById('citaClienteSelect');
+        if (selectCliente) {
+            selectCliente.style.display = '';
+            const rowCliente = selectCliente.closest('.form-row');
+            if (rowCliente) rowCliente.style.display = '';
+            await cargarClientesEnSelect();
+        }
+        
+        // Limpiar select de mascotas
+        const selectMascota = document.getElementById('citaMascotaSelect');
+        if (selectMascota) {
+            selectMascota.innerHTML = '<option value="">🔍 Primero seleccione un cliente</option>';
+            selectMascota.disabled = true;
+        }
     }
     
-    // Cargar datos en los selects
-    cargarClientesEnSelect();
-    cargarServiciosEnSelect();
-    cargarGroomersEnSelect();
+    // Cargar servicios y groomers (para todos)
+    await cargarServiciosEnSelect();
+    await cargarGroomersEnSelect();
     
-    // Abrir el modal
+    // Abrir modal
     openModal('modalNuevaCita');
+}
+
+// ============================================
+// CARGAR MASCOTAS PARA CITA (versión específica)
+// ============================================
+async function cargarMascotasClienteParaCita(clienteId) {
+    const selectMascota = document.getElementById('citaMascotaSelect');
+    if (!selectMascota) return;
+    
+    console.log('🔍 Cargando mascotas para cliente ID:', clienteId);
+    
+    selectMascota.innerHTML = '<option value="⏳">Cargando mascotas...</option>';
+    selectMascota.disabled = false;
+    
+    try {
+        const response = await fetch(`${API_URL}clientes.php?action=mascotas_cliente&cliente_id=${clienteId}`);
+        const data = await response.json();
+        
+        console.log('📦 Respuesta mascotas:', data);
+        
+        if (data.success && data.mascotas && data.mascotas.length > 0) {
+            selectMascota.innerHTML = '';
+            data.mascotas.forEach(mascota => {
+                const especieIcon = mascota.especie === 'perro' ? '🐕' : (mascota.especie === 'gato' ? '🐈' : '🐾');
+                selectMascota.innerHTML += `<option value="${mascota.id}">${especieIcon} ${escapeHtml(mascota.nombre)} - ${escapeHtml(mascota.raza || 'Sin raza')}</option>`;
+            });
+            selectMascota.disabled = false;
+        } else {
+            selectMascota.innerHTML = '<option value="">⚠️ No tienes mascotas registradas</option>';
+            selectMascota.disabled = false;
+        }
+    } catch (error) {
+        console.error('❌ Error cargando mascotas:', error);
+        selectMascota.innerHTML = '<option value="">❌ Error cargando mascotas</option>';
+        selectMascota.disabled = false;
+    }
 }
 
 // ============================================
@@ -4108,6 +4186,12 @@ function abrirModalNuevaCita(fecha, hora) {
 // ============================================
 
 async function cargarClientesEnSelect() {
+    // Si es cliente, NO hacer nada
+    if (IS_CLIENT) {
+        console.log('Cliente no puede cargar lista de clientes');
+        return;
+    }
+    
     const selectCliente = document.getElementById('citaClienteSelect');
     if (!selectCliente) return;
     
@@ -4118,16 +4202,13 @@ async function cargarClientesEnSelect() {
         if (data.success && data.clientes) {
             selectCliente.innerHTML = '<option value="">🔍 Seleccione un cliente...</option>';
             data.clientes.forEach(cliente => {
-                selectCliente.innerHTML += `<option value="${cliente.id}">🐾 ${cliente.nombre} - 📱 ${cliente.telefono || 'sin teléfono'}</option>`;
+                selectCliente.innerHTML += `<option value="${cliente.id}">🐾 ${escapeHtml(cliente.nombre)} - 📱 ${cliente.telefono || 'sin teléfono'}</option>`;
             });
             
-            // Agregar evento para cargar mascotas cuando se selecciona un cliente
             selectCliente.onchange = function() {
                 const clienteId = this.value;
                 if (clienteId) {
                     cargarMascotasPorCliente(clienteId);
-                } else {
-                    limpiarSelectMascotas();
                 }
             };
         } else {
@@ -4135,10 +4216,7 @@ async function cargarClientesEnSelect() {
         }
     } catch (error) {
         console.error('Error cargando clientes:', error);
-        const selectCliente = document.getElementById('citaClienteSelect');
-        if (selectCliente) {
-            selectCliente.innerHTML = '<option value="">❌ Error de conexión</option>';
-        }
+        selectCliente.innerHTML = '<option value="">❌ Error de conexión</option>';
     }
 }
 
@@ -4150,18 +4228,22 @@ async function cargarMascotasPorCliente(clienteId) {
     const selectMascota = document.getElementById('citaMascotaSelect');
     if (!selectMascota) return;
     
+    console.log('🔍 Cargando mascotas para cliente ID:', clienteId);
+    
     selectMascota.innerHTML = '<option value="">⏳ Cargando mascotas...</option>';
-    selectMascota.disabled = true;
+    selectMascota.disabled = false;  // ← IMPORTANTE: habilitar
     
     try {
         const response = await fetch(`${API_URL}clientes.php?action=mascotas_cliente&cliente_id=${clienteId}`);
         const data = await response.json();
         
+        console.log('📦 Respuesta mascotas:', data);
+        
         if (data.success && data.mascotas && data.mascotas.length > 0) {
             selectMascota.innerHTML = '<option value="">🐕 Seleccione una mascota...</option>';
             data.mascotas.forEach(mascota => {
                 const especieIcon = mascota.especie === 'perro' ? '🐕' : (mascota.especie === 'gato' ? '🐈' : '🐾');
-                selectMascota.innerHTML += `<option value="${mascota.id}">${especieIcon} ${mascota.nombre} - ${mascota.raza || 'Sin raza'} (${mascota.edad || '?'} años)</option>`;
+                selectMascota.innerHTML += `<option value="${mascota.id}">${especieIcon} ${escapeHtml(mascota.nombre)} - ${escapeHtml(mascota.raza || 'Sin raza')} (${mascota.edad || '?'} años)</option>`;
             });
             selectMascota.disabled = false;
         } else {
@@ -4169,7 +4251,7 @@ async function cargarMascotasPorCliente(clienteId) {
             selectMascota.disabled = false;
         }
     } catch (error) {
-        console.error('Error cargando mascotas:', error);
+        console.error('❌ Error cargando mascotas:', error);
         selectMascota.innerHTML = '<option value="">❌ Error cargando mascotas</option>';
         selectMascota.disabled = false;
     }
@@ -4255,116 +4337,6 @@ async function cargarGroomersEnSelect() {
     }
 }
 
-async function guardarCitaBD() {
-    console.log('🚨 GUARDAR CITA - INICIO 🚨');
-    
-    const cliente_id = document.getElementById('citaClienteSelect')?.value;
-    const mascota_id = document.getElementById('citaMascotaSelect')?.value;
-    const servicio_id = document.getElementById('citaServicio')?.value;
-    const groomer_id = document.getElementById('citaGroomer')?.value;
-    const observaciones = document.getElementById('citaObs')?.value;
-    
-    // OBTENER FECHA Y HORA DEL INPUT
-    const fechaInput = document.getElementById('citaFecha');
-    const horaInput = document.getElementById('citaHora');
-
-    let fecha = fechaInput ? fechaInput.value.trim() : '';
-    let hora = horaInput ? horaInput.value.trim() : '';
-    
-    console.log('📅 Fecha obtenida del input:', fecha);
-    console.log('⏰ Hora obtenida del input:', hora);
-    
-    // Si el input está vacío, usar las variables globales como respaldo
-    if (!fecha && window.nuevaCitaFecha) {
-        console.log('⚠️ Usando nuevaCitaFecha como respaldo:', window.nuevaCitaFecha);
-        fecha = window.nuevaCitaFecha;
-    }
-    if (!hora && window.nuevaCitaHora) {
-        console.log('⚠️ Usando nuevaCitaHora como respaldo:', window.nuevaCitaHora);
-        hora = window.nuevaCitaHora;
-    }
-    
-    // Validaciones
-    if (!cliente_id) {
-        showToast('❌ Por favor seleccione un cliente', 'error');
-        return;
-    }
-    
-    if (!mascota_id) {
-        showToast('❌ Por favor seleccione una mascota', 'error');
-        return;
-    }
-    
-    if (!servicio_id) {
-        showToast('❌ Por favor seleccione un servicio', 'error');
-        return;
-    }
-    
-    if (!fecha) {
-        showToast('❌ La fecha no puede estar vacía', 'error');
-        console.error('❌ FECHA VACÍA');
-        return;
-    }
-    
-    if (!hora) {
-        showToast('❌ La hora no puede estar vacía', 'error');
-        return;
-    }
-    
-    // Validar formato de fecha
-    if (!fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        showToast('❌ Formato de fecha inválido: ' + fecha, 'error');
-        return;
-    }
-    
-    // Asegurar formato de hora (HH:MM:SS)
-    if (hora && hora.split(':').length === 2) {
-        hora = hora + ':00';
-    }
-    
-    const datosEnviar = {
-        cliente_id: parseInt(cliente_id),
-        mascota_id: parseInt(mascota_id),
-        servicio_id: parseInt(servicio_id),
-        groomer_id: groomer_id ? parseInt(groomer_id) : null,
-        fecha: fecha,
-        hora: hora,
-        observaciones: observaciones || ''
-    };
-    
-    console.log('📤 DATOS A ENVIAR:', datosEnviar);
-    
-    const btn = document.querySelector('#modalNuevaCita .btn-teal');
-    const originalText = btn.textContent;
-    btn.textContent = '⏳ Guardando...';
-    btn.disabled = true;
-    
-    try {
-        const response = await fetch(API_URL + 'citas.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datosEnviar)
-        });
-        
-        const data = await response.json();
-        console.log('📦 RESPUESTA:', data);
-        
-        if (data.success) {
-            showToast('✅ Cita agendada correctamente', 'success');
-            closeModal('modalNuevaCita');
-            await cargarCitasSemana();
-            await cargarListaCitas();
-        } else {
-            showToast('❌ Error: ' + (data.error || 'No se pudo guardar'), 'error');
-        }
-    } catch (error) {
-        console.error('❌ Error:', error);
-        showToast('❌ Error de conexión', 'error');
-    } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
-    }
-}
 
 // Ver detalle de una cita
 async function verDetalleCita(citaId) {
@@ -4392,6 +4364,175 @@ async function verDetalleCita(citaId) {
     } catch (error) {
         console.error('Error:', error);
         showToast('Error de conexión', 'error');
+    }
+}
+
+// Cargar citas del cliente logueado
+async function cargarCitasCliente() {
+    if (!currentUser || !currentUser.id) return;
+    
+    const tbody = document.getElementById('citasClienteTable');
+    if (!tbody) return;
+    
+    try {
+        const response = await fetch(`${API_URL}citas.php?cliente_id=${currentUser.id}`);
+        const data = await response.json();
+        
+        if (data.success && data.citas) {
+            if (data.citas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="loading">No tienes citas programadas</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.citas.map(c => `
+                <tr>
+                    <td>${c.fecha} ${c.hora}</td>
+                    <td>${c.mascota_nombre || 'Mascota'}</td>
+                    <td>${c.servicio_nombre || 'Servicio'}</td>
+                    <td><span class="badge ${c.estado === 'confirmada' ? 'badge-green' : 'badge-orange'}">${c.estado}</span></td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error cargando citas del cliente:', error);
+    }
+}
+
+async function guardarCitaBD() {
+    console.log('🚨 GUARDAR CITA - INICIO');
+    
+    // Obtener cliente_id (puede venir del select o del campo oculto)
+    let cliente_id = document.getElementById('citaClienteSelect')?.value;
+    const hiddenClienteId = document.getElementById('hiddenClienteId');
+    
+    // Si es cliente, usar el ID oculto
+    if (IS_CLIENT && hiddenClienteId && hiddenClienteId.value) {
+        cliente_id = hiddenClienteId.value;
+        console.log('📌 Usando ID oculto de cliente:', cliente_id);
+    }
+    
+    const mascota_id = document.getElementById('citaMascotaSelect')?.value;
+    const servicio_id = document.getElementById('citaServicio')?.value;
+    const groomer_id = document.getElementById('citaGroomer')?.value || null;
+    const observaciones = document.getElementById('citaObs')?.value || '';
+    
+    // Obtener fecha y hora
+    const fechaInput = document.getElementById('citaFecha');
+    const horaInput = document.getElementById('citaHora');
+    
+    let fecha = fechaInput ? fechaInput.value.trim() : '';
+    let hora = horaInput ? horaInput.value.trim() : '';
+    
+    console.log('📋 VALORES:', { cliente_id, mascota_id, servicio_id, groomer_id, fecha, hora });
+    
+    // Validaciones
+    if (!cliente_id) {
+        showToast('❌ Por favor seleccione un cliente', 'error');
+        return;
+    }
+    
+    if (!mascota_id) {
+        showToast('❌ Por favor seleccione una mascota', 'error');
+        return;
+    }
+    
+    if (!servicio_id) {
+        showToast('❌ Por favor seleccione un servicio', 'error');
+        return;
+    }
+    
+    if (!fecha) {
+        showToast('❌ La fecha es requerida', 'error');
+        return;
+    }
+    
+    if (!hora) {
+        showToast('❌ La hora es requerida', 'error');
+        return;
+    }
+    
+    // Validar formato fecha
+    if (!fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        showToast('❌ Formato de fecha inválido. Use YYYY-MM-DD', 'error');
+        return;
+    }
+    
+    // Formatear hora a HH:MM:SS
+    if (hora && hora.split(':').length === 2) {
+        hora = hora + ':00';
+    }
+    
+    const datosEnviar = {
+        cliente_id: parseInt(cliente_id),
+        mascota_id: parseInt(mascota_id),
+        servicio_id: parseInt(servicio_id),
+        fecha: fecha,
+        hora: hora,
+        observaciones: observaciones
+    };
+    
+    // Solo enviar groomer_id si tiene valor
+    if (groomer_id && groomer_id !== '') {
+        datosEnviar.groomer_id = parseInt(groomer_id);
+    }
+    
+    console.log('📤 DATOS A ENVIAR:', datosEnviar);
+    
+    const btn = document.querySelector('#modalNuevaCita .btn-teal');
+    if (!btn) {
+        showToast('Error: No se encontró el botón', 'error');
+        return;
+    }
+    
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Guardando...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(API_URL + 'citas.php', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(datosEnviar)
+        });
+        
+        const textResponse = await response.text();
+        console.log('📦 Respuesta cruda:', textResponse);
+        
+        let data;
+        try {
+            data = JSON.parse(textResponse);
+        } catch (e) {
+            console.error('Error parseando JSON:', e);
+            throw new Error('Respuesta inválida del servidor');
+        }
+        
+        if (data.success) {
+            showToast('✅ Cita agendada correctamente', 'success');
+            closeModal('modalNuevaCita');
+            
+            // Recargar datos
+            await cargarCitasSemana();
+            await cargarListaCitas();
+            if (IS_CLIENT) {
+                await cargarCitasCliente();
+            }
+            
+            // Limpiar campos
+            if (fechaInput) fechaInput.value = '';
+            if (horaInput) horaInput.value = '';
+            if (obsInput) obsInput.value = '';
+            
+        } else {
+            showToast('❌ Error: ' + (data.error || 'No se pudo guardar la cita'), 'error');
+        }
+    } catch (error) {
+        console.error('❌ Error detallado:', error);
+        showToast('❌ Error de conexión: ' + error.message, 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
     }
 }
 
@@ -4763,6 +4904,35 @@ async function eliminarRegistroVacuna(cartillaId) {
     } catch (error) {
         console.error('Error:', error);
         showToast('❌ Error de conexión', 'error');
+    }
+}
+
+// ============================================
+// VALIDAR CITA INTELIGENTE
+// ============================================
+async function validarCitaInteligente(datos) {
+    try {
+        const response = await fetch(`${API_URL}agenda_inteligente.php?action=validar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+        });
+        
+        const data = await response.json();
+        console.log('📋 Validación agenda inteligente:', data);
+        
+        if (!data.success) {
+            showToast(data.error, 'error');
+            if (data.slots_alternativos && data.slots_alternativos.length > 0) {
+                showToast(`💡 Horarios alternativos disponibles: ${data.slots_alternativos.map(s => s.hora_inicio).join(', ')}`, 'info');
+            }
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error validando:', error);
+        return true; // Si falla la validación, continuar (fallback)
     }
 }
 

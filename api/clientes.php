@@ -86,12 +86,15 @@ if ($method === 'GET' && !isset($_GET['action'])) {
 if ($method === 'GET' && $action === 'mascotas_cliente') {
     $cliente_id = isset($_GET['cliente_id']) ? intval($_GET['cliente_id']) : 0;
     
+    // Log para depuración
+    error_log("=== mascotas_cliente llamado con cliente_id: " . $cliente_id);
+    
     if ($cliente_id <= 0) {
         echo json_encode(['success' => false, 'error' => 'ID de cliente requerido']);
         exit;
     }
     
-    // Verificar permiso: el cliente solo puede ver sus propias mascotas
+    // Verificar permiso
     if ($usuario['rol'] !== 'admin' && $usuario['rol'] !== 'recep' && $usuario['id'] != $cliente_id) {
         echo json_encode(['success' => false, 'error' => 'No tienes permiso para ver estas mascotas']);
         exit;
@@ -107,6 +110,8 @@ if ($method === 'GET' && $action === 'mascotas_cliente') {
         $mascotas[] = $row;
     }
     $stmt->close();
+    
+    error_log("Mascotas encontradas: " . count($mascotas));
     
     echo json_encode(['success' => true, 'mascotas' => $mascotas]);
     exit;

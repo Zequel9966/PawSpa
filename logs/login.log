@@ -73,3 +73,9 @@
 [2026-05-27 23:26:47] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
 [2026-05-27 23:54:39] FALLO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | Error: Rol incorrecto. El usuario es client | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
 [2026-05-27 23:54:50] EXITO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-28 02:01:58] EXITO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-28 03:19:26] EXITO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-28 04:41:38] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36
+[2026-05-28 04:56:54] EXITO | IP: ::1 | Email: admin@pawspa.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-28 04:57:13] EXITO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+[2026-05-28 05:06:50] EXITO | IP: ::1 | Email: mau75cap.mc@gmail.com | CAPTCHA_OK | UA: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36

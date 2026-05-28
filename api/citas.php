@@ -392,4 +392,44 @@ switch($method) {
         echo json_encode(['error' => 'Método no permitido']);
         break;
 }
+
+// ============================================
+// VALIDACIÓN INTELIGENTE DE CITAS
+// ============================================
+function validarCitaInteligente($conn, $data) {
+    require_once 'agenda_inteligente.php';
+    
+    // Reutilizar las funciones de validación
+    if (esFeriado($data['fecha'], $conn)) {
+        return ['success' => false, 'error' => 'El spa está cerrado por feriado'];
+    }
+    
+    if (groomerAusente($data['groomer_id'], $data['fecha'], $conn)) {
+        return ['success' => false, 'error' => 'El groomer no está disponible en esta fecha'];
+    }
+    
+    // Obtener tamaño de la mascota
+    $stmt = $conn->prepare("SELECT tamanio FROM mascotas WHERE id = ?");
+    $stmt->bind_param("i", $data['mascota_id']);
+    $stmt->execute();
+    $mascota = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    
+    $duracion_info = calcularDuracionReal($data['servicio_id'], $mascota['tamanio'], $conn);
+    
+    $conflictos = verificarConflictos($conn, $data['groomer_id'], $data['fecha'], $data['hora'], $duracion_info['total_bloqueado']);
+    
+    if (count($conflictos) > 0) {
+        return ['success' => false, 'error' => 'El groomer ya tiene una cita en ese horario'];
+    }
+    
+    $capacidad = verificarCapacidadSpa($conn, $data['fecha'], $data['hora'], $duracion_info['total_bloqueado'], $data['groomer_id']);
+    
+    if (!$capacidad['disponible']) {
+        return ['success' => false, 'error' => 'Capacidad del spa al máximo'];
+    }
+    
+    return ['success' => true, 'duracion_calculada' => $duracion_info['total_bloqueado']];
+}
+
 ?>
