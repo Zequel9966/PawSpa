@@ -8,6 +8,15 @@ $isAdmin = $isLoggedIn && $currentUser['rol'] === 'admin';
 $isRecep = $isLoggedIn && $currentUser['rol'] === 'recep';
 $isGroomer = $isLoggedIn && $currentUser['rol'] === 'groo';
 $isClient = $isLoggedIn && $currentUser['rol'] === 'client';
+
+// ✅ DEBUG: Verificar en consola del servidor
+error_log("Usuario logueado: " . ($currentUser['nombre'] ?? 'ninguno'));
+error_log("Rol: " . ($currentUser['rol'] ?? 'ninguno'));
+error_log("isClient: " . ($isClient ? 'true' : 'false'));
+/* error_log("isAdmin: " . ($isAdmin ? 'true' : 'false'));
+error_log("isRecep: " . ($isRecep ? 'true' : 'false'));
+error_log("isGroomer: " . ($isGroomer ? 'true' : 'false')); */
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -776,7 +785,7 @@ tr:hover td { background: var(--cream); }
           <h2>Agenda de Citas</h2>
           <p>Gestión de turnos y disponibilidad de groomers</p>
           <div class="header-actions">
-            <button class="btn btn-teal" onclick="openModal('modalNuevaCita')">➕ Nueva Cita</button>
+            <button class="btn btn-teal" onclick="abrirModalNuevaCita()">➕ Nueva Cita</button>
             <button class="btn btn-outline" onclick="openModal('modalBloqueo')">🚫 Bloquear Horario</button>
           </div>
         </div>
@@ -811,68 +820,104 @@ tr:hover td { background: var(--cream); }
         </div>
       </div>
 
-      <!-- GROOMING -->
-      <div id="page-grooming" class="page">
-        <div class="page-header">
-          <h2>Fichas de Grooming</h2>
-          <p>Gestión de servicios activos e historial de atención</p>
+<!-- GROOMING -->
+<div id="page-grooming" class="page">
+    <div class="page-header">
+        <h2>Fichas de Grooming</h2>
+        <p>Gestión de servicios activos e historial de atención</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <!-- FICHA DE SERVICIO ACTIVO -->
+        <div class="card" style="border-left:4px solid var(--caramel)" id="fichaServicioCard">
+            <div id="fichaServicioContent">
+                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px">
+                    <div>
+                        <div style="font-size:.75rem;color:var(--gray);text-transform:uppercase;font-weight:600" id="citaIdLabel">CITA EN SELECCIÓN</div>
+                        <h3 style="margin-top:4px;font-size:1.1rem" id="servicioTitle">🐈 Seleccione una cita</h3>
+                        <p style="font-size:.82rem;color:var(--gray)" id="servicioInfo">Haga clic en una cita del calendario</p>
+                    </div>
+                    <span class="badge" id="servicioEstadoBadge">⏳ Pendiente</span>
+                </div>
+                <div style="display:flex;gap:10px;margin-bottom:16px">
+                    <div style="flex:1;background:var(--cream);border-radius:8px;padding:10px">
+                        <div style="font-size:.72rem;color:var(--gray);font-weight:600;margin-bottom:4px">INFORMACIÓN DE LA MASCOTA</div>
+                        <div id="mascotaInfo">-</div>
+                    </div>
+                    <div style="flex:1;background:var(--cream);border-radius:8px;padding:10px">
+                        <div style="font-size:.72rem;color:var(--gray);font-weight:600;margin-bottom:4px">DURACIÓN DEL SERVICIO</div>
+                        <div style="font-size:1.4rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--teal)" id="duracionBase">-- min</div>
+                        <div style="font-size:.72rem;color:var(--gray)" id="duracionInfo">Duración base del servicio</div>
+                    </div>
+                </div>
+                <div style="margin-bottom:14px">
+                    <div style="font-size:.8rem;font-weight:600;color:var(--gray);margin-bottom:8px">CHECKLIST DE SERVICIO <span style="color:var(--caramel)" id="checkCount">(0/6 completados)</span></div>
+                    <div id="checklistContainer">
+                        <div class="checklist-item" data-id="1" onclick="toggleCheck(this)">
+                            <div class="checklist-check"></div>
+                            <div class="checklist-label">🛁 Baño</div>
+                            <input class="checklist-obs" type="text" placeholder="Observación..." readonly>
+                        </div>
+                        <div class="checklist-item" data-id="2" onclick="toggleCheck(this)">
+                            <div class="checklist-check"></div>
+                            <div class="checklist-label">✂️ Corte de pelo</div>
+                            <input class="checklist-obs" type="text" placeholder="Observación..." readonly>
+                        </div>
+                        <div class="checklist-item" data-id="3" onclick="toggleCheck(this)">
+                            <div class="checklist-check"></div>
+                            <div class="checklist-label">💅 Corte de uñas</div>
+                            <input class="checklist-obs" type="text" placeholder="Observación..." readonly>
+                        </div>
+                        <div class="checklist-item" data-id="4" onclick="toggleCheck(this)">
+                            <div class="checklist-check"></div>
+                            <div class="checklist-label">👂 Limpieza de oídos</div>
+                            <input class="checklist-obs" type="text" placeholder="Observación..." readonly>
+                        </div>
+                        <div class="checklist-item" data-id="5" onclick="toggleCheck(this)">
+                            <div class="checklist-check"></div>
+                            <div class="checklist-label">🫧 Expresión de glándulas</div>
+                            <input class="checklist-obs" type="text" placeholder="Observación..." readonly>
+                        </div>
+                        <div class="checklist-item" data-id="6" onclick="toggleCheck(this)">
+                            <div class="checklist-check"></div>
+                            <div class="checklist-label">🌸 Perfume / acabado</div>
+                            <input class="checklist-obs" type="text" placeholder="Observación..." readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Observaciones y recomendaciones</label>
+                    <textarea id="servicioObservaciones" rows="3" placeholder="Ingrese observaciones..." readonly></textarea>
+                </div>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-teal" style="flex:1" id="cerrarServicioBtn" onclick="cerrarServicioGrooming()" disabled>✅ Cerrar Servicio</button>
+                    <button class="btn btn-outline" id="guardarFichaBtn" onclick="guardarFichaGrooming()" disabled>💾 Guardar</button>
+                </div>
+            </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
-          <div class="card" style="border-left:4px solid var(--caramel)">
-            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px">
-              <div>
-                <div style="font-size:.75rem;color:var(--gray);text-transform:uppercase;font-weight:600">CITA #001 — EN PROGRESO</div>
-                <h3 style="margin-top:4px;font-size:1.1rem">🐈 Mishi — Servicio Completo</h3>
-                <p style="font-size:.82rem;color:var(--gray)">Dueña: Ana Torres · Groomer: María González</p>
-              </div>
-              <span class="badge badge-orange">⏳ Activo</span>
-            </div>
-            <div style="display:flex;gap:10px;margin-bottom:16px">
-              <div style="flex:1;background:var(--cream);border-radius:8px;padding:10px">
-                <div style="font-size:.72rem;color:var(--gray);font-weight:600;margin-bottom:4px">ESTADO INGRESO</div>
-                <div style="font-size:.82rem">Nudos: <strong>Moderados</strong></div>
-                <div style="font-size:.82rem">Temperamento: <strong>Tranquilo</strong></div>
-                <div style="font-size:.82rem">Raza: <strong>Persa</strong></div>
-              </div>
-              <div style="flex:1;background:var(--cream);border-radius:8px;padding:10px">
-                <div style="font-size:.72rem;color:var(--gray);font-weight:600;margin-bottom:4px">TIEMPO</div>
-                <div style="font-size:1.4rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--teal)" id="timer">01:23:45</div>
-                <div style="font-size:.72rem;color:var(--gray)">Duración base: 90 min</div>
-              </div>
-            </div>
-            <div style="margin-bottom:14px">
-              <div style="font-size:.8rem;font-weight:600;color:var(--gray);margin-bottom:8px">CHECKLIST DE SERVICIO <span style="color:var(--caramel)" id="checkCount">(4/6 completados)</span></div>
-              <div id="checklistContainer">
-                <div class="checklist-item checked" onclick="toggleCheck(this)"><div class="checklist-check">✓</div><div class="checklist-label">🛁 Baño</div><input class="checklist-obs" placeholder="Observación..." value="Shampoo medicado"></div>
-                <div class="checklist-item checked" onclick="toggleCheck(this)"><div class="checklist-check">✓</div><div class="checklist-label">✂️ Corte de pelo</div><input class="checklist-obs" placeholder="Observación..." value="Corte higiénico"></div>
-                <div class="checklist-item checked" onclick="toggleCheck(this)"><div class="checklist-check">✓</div><div class="checklist-label">💅 Corte de uñas</div><input class="checklist-obs" placeholder="Observación..."></div>
-                <div class="checklist-item checked" onclick="toggleCheck(this)"><div class="checklist-check">✓</div><div class="checklist-label">👂 Limpieza de oídos</div><input class="checklist-obs" placeholder="Observación..."></div>
-                <div class="checklist-item" onclick="toggleCheck(this)"><div class="checklist-check"></div><div class="checklist-label">🫧 Expresión de glándulas</div><input class="checklist-obs" placeholder="Observación..."></div>
-                <div class="checklist-item" onclick="toggleCheck(this)"><div class="checklist-check"></div><div class="checklist-label">🌸 Perfume / acabado</div><input class="checklist-obs" placeholder="Observación..."></div>
-              </div>
-            </div>
-            <div class="input-group">
-              <label>Observaciones y recomendaciones</label>
-              <textarea placeholder="Ingrese observaciones...">Requiere cita de seguimiento en 3 semanas. Pelaje en buen estado post-servicio.</textarea>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-teal" style="flex:1" onclick="cerrarServicio()">✅ Cerrar Servicio</button>
-              <button class="btn btn-outline" onclick="showToast('Ficha guardada 💾','success')">💾 Guardar</button>
-            </div>
-          </div>
-          <div>
+        
+        <!-- COLA DE ESPERA E HISTORIAL -->
+        <div>
             <div class="card" style="margin-bottom:16px">
-              <div class="card-header"><div class="card-title">Cola de Espera</div></div>
-              <table><thead><tr><th>Hora</th><th>Mascota</th><th>Servicio</th><th>Estado</th></tr></thead>
-              <tbody>
-                <tr><td>14:00</td><td>🐕 Rocky</td><td>Baño+Corte</td><td><span class="badge badge-blue">En espera</span></td></tr>
-                <tr><td>15:30</td><td>🐩 Coco</td><td>Baño Rápido</td><td><span class="badge badge-gray">Agendado</span></td></tr>
-                <tr><td>16:00</td><td>🐕 Toby</td><td>Completo</td><td><span class="badge badge-gray">Agendado</span></td></tr>
-              </tbody></table>
+                <div class="card-header">
+                    <div class="card-title">📋 Cola de Espera - Servicios Activos</div>
+                    <button class="btn btn-sm btn-outline" onclick="cargarServiciosActivos()">🔄 Refrescar</button>
+                </div>
+                <div id="colaEsperaContainer">
+                    <div class="loading">Cargando servicios activos...</div>
+                </div>
             </div>
-          </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📜 Historial de Servicios del Groomer</div>
+                    <button class="btn btn-sm btn-outline" onclick="cargarHistorialGroomer()">🔄 Refrescar</button>
+                </div>
+                <div id="historialGroomerContainer">
+                    <div class="loading">Cargando historial...</div>
+                </div>
+            </div>
         </div>
-      </div>
+    </div>
+</div>
 
       <!-- CLIENTES -->
       <div id="page-clientes" class="page">
@@ -1228,7 +1273,7 @@ tr:hover td { background: var(--cream); }
         <h2>Mi Cuenta</h2>
         <p>Gestiona tus citas, mascotas e historial</p>
         <div class="header-actions">
-            <button class="btn btn-teal" onclick="openModal('modalNuevaCita')">📅 Agendar Cita</button>
+            <button class="btn btn-teal" onclick="abrirModalNuevaCita()">📅 Agendar Cita</button>
         </div>
     </div>
     
@@ -1380,16 +1425,29 @@ tr:hover td { background: var(--cream); }
         </div>
         
         <div class="form-row">
+            <?php if ($isClient): ?>
+            <!-- CLIENTE: muestra su nombre, no un select -->
+            <div class="form-col input-group">
+                <label>Cliente</label>
+                <div style="padding:8px 12px;background:#f0f9f6;border:1px solid #c8e6c9;border-radius:8px;font-weight:600;color:var(--teal)">
+                    🐾 <?php echo htmlspecialchars($currentUser['nombre']); ?>
+                </div>
+                <input type="hidden" id="hiddenClienteId" value="<?php echo (int)$currentUser['id']; ?>">
+            </div>
+            <?php else: ?>
+            <!-- ADMIN / RECEP / GROOMER: select de clientes -->
             <div class="form-col input-group">
                 <label>Cliente *</label>
                 <select id="citaClienteSelect" style="width:100%">
-                    <option value="">🔍 Cargando clientes...</option>
+                    <option value="">🔍 Seleccione un cliente...</option>
                 </select>
             </div>
+            <?php endif; ?>
+            
             <div class="form-col input-group">
                 <label>Mascota *</label>
-                <select id="citaMascotaSelect" style="width:100%" disabled>
-                    <option value="">🔍 Primero seleccione un cliente</option>
+                <select id="citaMascotaSelect" style="width:100%" <?php echo $isClient ? '' : 'disabled'; ?>>
+                    <option value=""><?php echo $isClient ? '🐕 Selecciona tu mascota...' : '🔍 Primero seleccione un cliente'; ?></option>
                 </select>
             </div>
         </div>
@@ -1397,11 +1455,11 @@ tr:hover td { background: var(--cream); }
         <div class="form-row">
             <div class="form-col input-group">
                 <label>Fecha *</label>
-                <input type="date" id="citaFecha">
+                <input type="date" id="citaFecha" min="<?php echo date('Y-m-d'); ?>">
             </div>
             <div class="form-col input-group">
                 <label>Hora *</label>
-                <input type="time" id="citaHora">
+                <input type="time" id="citaHora" min="09:00" max="18:00">
             </div>
         </div>
         
@@ -1412,12 +1470,22 @@ tr:hover td { background: var(--cream); }
                     <option value="">⏳ Cargando servicios...</option>
                 </select>
             </div>
+            <?php if ($isClient): ?>
+            <div class="form-col input-group">
+                <label>Groomer</label>
+                <div style="padding:8px 12px;background:#f5f5f5;border-radius:8px;color:#888;font-size:0.9rem">
+                    ✂️ Lo asignará el spa
+                </div>
+                <input type="hidden" id="citaGroomer" value="">
+            </div>
+            <?php else: ?>
             <div class="form-col input-group">
                 <label>Groomer</label>
                 <select id="citaGroomer">
                     <option value="">👤 Sin asignar</option>
                 </select>
             </div>
+            <?php endif; ?>
         </div>
         
         <div class="input-group">
@@ -1740,6 +1808,62 @@ tr:hover td { background: var(--cream); }
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closeModal('modalMascotaCliente')">Cancelar</button>
             <button class="btn btn-teal" onclick="guardarMascotaCliente()">💾 Guardar Mascota</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gestión de Cita (Grooming) -->
+<div class="modal-overlay hidden" id="modalGestionCita">
+    <div class="modal" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3 class="modal-title">✂️ Gestionar Cita de Grooming</h3>
+            <button class="modal-close" onclick="closeModal('modalGestionCita')">×</button>
+        </div>
+        
+        <input type="hidden" id="gestionCitaId">
+        
+        <!-- Información de la cita -->
+        <div id="gestionCitaInfo"></div>
+        
+        <div class="form-row">
+            <div class="form-col input-group">
+                <label>📅 Estado de la cita</label>
+                <select id="gestionCitaEstado" class="form-control">
+                    <option value="pendiente">⏳ Pendiente</option>
+                    <option value="confirmada">✓ Confirmada</option>
+                    <option value="en_progreso">🔄 En progreso</option>
+                    <option value="completada">✅ Completada</option>
+                    <option value="cancelada">❌ Cancelada</option>
+                </select>
+            </div>
+            <div class="form-col input-group">
+                <label>✂️ Groomer asignado</label>
+                <select id="gestionCitaGroomer" class="form-control">
+                    <option value="">👤 Sin asignar</option>
+                    <option value="1">✂️ María González</option>
+                    <option value="2">✂️ Carlos Ríos</option>
+                    <option value="3">✂️ Ana Flores</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Checklist de Servicio -->
+        <div class="input-group">
+            <label>✅ Checklist de Servicio</label>
+            <div id="gestionChecklistContainer" style="max-height: 300px; overflow-y: auto;">
+                <div class="loading">Cargando checklist...</div>
+            </div>
+        </div>
+        
+        <!-- Observaciones -->
+        <div class="input-group">
+            <label>📝 Observaciones</label>
+            <textarea id="gestionCitaObservaciones" rows="3" placeholder="Notas sobre el servicio, comportamiento de la mascota, etc..."></textarea>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('modalGestionCita')">Cancelar</button>
+            <button class="btn btn-teal" onclick="guardarGestionCita()">💾 Guardar Cambios</button>
         </div>
     </div>
 </div>
@@ -2525,8 +2649,7 @@ function buildCalendar() {
                                        cita.servicio_id === 2 ? 'Baño + Corte' :
                                        cita.servicio_id === 3 ? 'Servicio Completo' : 'Servicio');
                 
-                html += `<td style="padding: 6px; border: 1px solid #ddd; background: #FFF8F0; cursor: pointer;" onclick="verDetalleCita(${cita.id})">
-                            <div style="background: linear-gradient(135deg, #2D7A6B, #3D9B8A); color: white; padding: 6px; border-radius: 8px; font-size: 0.7rem; text-align: center;">
+                                html += `<td style="padding: 6px; border: 1px solid #ddd; background: #FFF8F0; cursor: pointer;" onclick="verDetalleCita(${cita.id})">                            <div style="background: linear-gradient(135deg, #2D7A6B, #3D9B8A); color: white; padding: 6px; border-radius: 8px; font-size: 0.7rem; text-align: center;">
                                 <strong>${nombreMascota}</strong><br>
                                 <small>${servicioNombre}</small><br>
                                 <span style="font-size: 0.6rem; background: rgba(255,255,255,0.2); padding: 2px 4px; border-radius: 4px; display: inline-block; margin-top: 3px;">${cita.estado}</span>
@@ -4053,96 +4176,38 @@ let nuevaCitaFecha = '';
 let nuevaCitaHora = '';
 
 // ============================================
-// ABRIR MODAL NUEVA CITA (VERSIÓN CORREGIDA)
+// ABRIR MODAL NUEVA CITA
 // ============================================
 async function abrirModalNuevaCita(fecha, hora) {
-    console.log('🔵 ABRIENDO MODAL - Usuario:', currentUser);
-    console.log('IS_CLIENT:', IS_CLIENT);
-    console.log('IS_ADMIN:', IS_ADMIN);
-    
-    // Guardar fecha y hora
-    window.nuevaCitaFecha = fecha || '';
-    window.nuevaCitaHora = hora || '';
+    console.log('🔵 ABRIENDO MODAL — IS_CLIENT:', IS_CLIENT, '| usuario:', currentUser?.nombre);
     
     const fechaInput = document.getElementById('citaFecha');
-    const horaInput = document.getElementById('citaHora');
+    const horaInput  = document.getElementById('citaHora');
+    const obsInput   = document.getElementById('citaObs');
     
-    if (fechaInput && window.nuevaCitaFecha) {
-        fechaInput.value = window.nuevaCitaFecha;
-    }
-    if (horaInput && window.nuevaCitaHora) {
-        horaInput.value = window.nuevaCitaHora;
-    }
-    
-    // Limpiar observaciones
-    const obsInput = document.getElementById('citaObs');
+    if (fechaInput && fecha) fechaInput.value = fecha;
+    if (horaInput  && hora)  horaInput.value  = hora;
     if (obsInput) obsInput.value = '';
     
-    // ============================================
-    // CASO 1: ES CLIENTE
-    // ============================================
-    if (IS_CLIENT && currentUser && currentUser.id) {
-        console.log('👤 Modo Cliente - ID:', currentUser.id);
-        
-        // Crear u obtener campo oculto con el ID del cliente
-        let hiddenClienteId = document.getElementById('hiddenClienteId');
-        if (!hiddenClienteId) {
-            hiddenClienteId = document.createElement('input');
-            hiddenClienteId.type = 'hidden';
-            hiddenClienteId.id = 'hiddenClienteId';
-            hiddenClienteId.value = currentUser.id;
-            const selectCliente = document.getElementById('citaClienteSelect');
-            if (selectCliente && selectCliente.parentNode) {
-                selectCliente.parentNode.appendChild(hiddenClienteId);
-            }
-        } else {
-            hiddenClienteId.value = currentUser.id;
-        }
-        
-        // OCULTAR completamente el select de cliente
-        const selectCliente = document.getElementById('citaClienteSelect');
-        if (selectCliente) {
-            selectCliente.style.display = 'none';
-            const labelCliente = selectCliente.closest('.input-group')?.querySelector('label');
-            if (labelCliente) labelCliente.style.display = 'none';
-            // También ocultar el contenedor si es necesario
-            const rowCliente = selectCliente.closest('.form-row');
-            if (rowCliente) rowCliente.style.display = 'none';
-        }
-        
-        // Cargar mascotas del cliente actual
+    if (IS_CLIENT && currentUser?.id) {
+        // Cliente: el modal ya muestra su nombre (PHP lo renderizó).
+        // Solo cargar sus mascotas y los servicios.
         await cargarMascotasClienteParaCita(currentUser.id);
         
-    } 
-    // ============================================
-    // CASO 2: ES ADMIN O RECEPCIONISTA
-    // ============================================
-    else if (IS_ADMIN || IS_RECEP) {
-        console.log('👤 Modo Admin/Recepcionista');
-        
-        // Mostrar select de cliente
-        const selectCliente = document.getElementById('citaClienteSelect');
-        if (selectCliente) {
-            selectCliente.style.display = '';
-            const rowCliente = selectCliente.closest('.form-row');
-            if (rowCliente) rowCliente.style.display = '';
-            await cargarClientesEnSelect();
-        }
-        
-        // Limpiar select de mascotas
+    } else if (IS_ADMIN || IS_RECEP || IS_GROOMER) {
+        // Admin/Recep/Groomer: cargar lista de clientes
+        await cargarClientesEnSelect();
         const selectMascota = document.getElementById('citaMascotaSelect');
         if (selectMascota) {
             selectMascota.innerHTML = '<option value="">🔍 Primero seleccione un cliente</option>';
             selectMascota.disabled = true;
         }
+        await cargarGroomersEnSelect();
     }
     
-    // Cargar servicios y groomers (para todos)
     await cargarServiciosEnSelect();
-    await cargarGroomersEnSelect();
-    
-    // Abrir modal
     openModal('modalNuevaCita');
+    console.log('✅ Modal abierto');
 }
 
 // ============================================
@@ -4367,12 +4432,14 @@ async function verDetalleCita(citaId) {
     }
 }
 
-// Cargar citas del cliente logueado
+// Cargar citas del cliente logueado con estado
 async function cargarCitasCliente() {
     if (!currentUser || !currentUser.id) return;
     
     const tbody = document.getElementById('citasClienteTable');
     if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4" class="loading">Cargando citas...</td></tr>';
     
     try {
         const response = await fetch(`${API_URL}citas.php?cliente_id=${currentUser.id}`);
@@ -4384,26 +4451,50 @@ async function cargarCitasCliente() {
                 return;
             }
             
-            tbody.innerHTML = data.citas.map(c => `
-                <tr>
-                    <td>${c.fecha} ${c.hora}</td>
-                    <td>${c.mascota_nombre || 'Mascota'}</td>
-                    <td>${c.servicio_nombre || 'Servicio'}</td>
-                    <td><span class="badge ${c.estado === 'confirmada' ? 'badge-green' : 'badge-orange'}">${c.estado}</span></td>
-                </tr>
-            `).join('');
+            // Mapeo de estados para mostrar bonito
+            const estadoMap = {
+                'pendiente': { texto: '⏳ Pendiente', clase: 'badge-gray' },
+                'confirmada': { texto: '✅ Confirmada', clase: 'badge-green' },
+                'en_progreso': { texto: '🔄 En progreso', clase: 'badge-orange' },
+                'completada': { texto: '✓ Completada', clase: 'badge-teal' },
+                'cancelada': { texto: '❌ Cancelada', clase: 'badge-red' }
+            };
+            
+            tbody.innerHTML = data.citas.map(c => {
+                const estado = estadoMap[c.estado] || { texto: c.estado, clase: 'badge-gray' };
+                return `
+                    <tr>
+                        <td>${c.fecha} ${c.hora?.substring(0,5) || ''}</td>
+                        <td>${c.mascota_nombre || 'Mascota'}</td>
+                        <td>${c.servicio_nombre || 'Servicio'}</td>
+                        <td><span class="badge ${estado.clase}">${estado.texto}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" class="error">Error al cargar citas</td></tr>';
         }
     } catch (error) {
         console.error('Error cargando citas del cliente:', error);
+        tbody.innerHTML = '<tr><td colspan="4" class="error">Error de conexión</td></tr>';
     }
 }
 
 async function guardarCitaBD() {
     console.log('🚨 GUARDAR CITA - INICIO');
     
-    // Obtener cliente_id (puede venir del select o del campo oculto)
-    let cliente_id = document.getElementById('citaClienteSelect')?.value;
+    // Obtener referencias a los elementos PRIMERO (antes de usarlos)
+    const clienteSelect = document.getElementById('citaClienteSelect');
+    const mascotaSelect = document.getElementById('citaMascotaSelect');
+    const servicioSelect = document.getElementById('citaServicio');
+    const groomerSelect = document.getElementById('citaGroomer');
+    const fechaInput = document.getElementById('citaFecha');
+    const horaInput = document.getElementById('citaHora');
+    const obsInput = document.getElementById('citaObs');  // ✅ DEFINIR AQUÍ PRIMERO
     const hiddenClienteId = document.getElementById('hiddenClienteId');
+    
+    // Obtener valores
+    let cliente_id = clienteSelect?.value;
     
     // Si es cliente, usar el ID oculto
     if (IS_CLIENT && hiddenClienteId && hiddenClienteId.value) {
@@ -4411,14 +4502,10 @@ async function guardarCitaBD() {
         console.log('📌 Usando ID oculto de cliente:', cliente_id);
     }
     
-    const mascota_id = document.getElementById('citaMascotaSelect')?.value;
-    const servicio_id = document.getElementById('citaServicio')?.value;
-    const groomer_id = document.getElementById('citaGroomer')?.value || null;
-    const observaciones = document.getElementById('citaObs')?.value || '';
-    
-    // Obtener fecha y hora
-    const fechaInput = document.getElementById('citaFecha');
-    const horaInput = document.getElementById('citaHora');
+    const mascota_id = mascotaSelect?.value;
+    const servicio_id = servicioSelect?.value;
+    const groomer_id = groomerSelect?.value || null;
+    const observaciones = obsInput?.value || '';  // ✅ Usar obsInput ya definido
     
     let fecha = fechaInput ? fechaInput.value.trim() : '';
     let hora = horaInput ? horaInput.value.trim() : '';
@@ -4519,10 +4606,10 @@ async function guardarCitaBD() {
                 await cargarCitasCliente();
             }
             
-            // Limpiar campos
+            // Limpiar campos - ✅ Ahora obsInput está definido correctamente
             if (fechaInput) fechaInput.value = '';
             if (horaInput) horaInput.value = '';
-            if (obsInput) obsInput.value = '';
+            if (obsInput) obsInput.value = '';  // ✅ Esto ya funciona
             
         } else {
             showToast('❌ Error: ' + (data.error || 'No se pudo guardar la cita'), 'error');
@@ -4557,10 +4644,10 @@ async function cargarListaCitas() {
             tbody.innerHTML = data.citas.map(c => `
                 <tr>
                     <td>${c.id}</td>
-                    <td>${c.fecha} ${c.hora}</td>
-                    <td>${c.cliente_nombre}</td>
-                    <td>${c.mascota_nombre}</td>
-                    <td>${c.servicio_nombre}</td>
+                    <td>${c.fecha} ${c.hora?.substring(0,5) || ''}</td>
+                    <td>${c.cliente_nombre || 'N/A'}</td>
+                    <td>${c.mascota_nombre || 'N/A'}</td>
+                    <td>${c.servicio_nombre || 'N/A'}</td>
                     <td>${c.groomer_nombre || '—'}</td>
                     <td><span class="badge ${estadoBadge[c.estado] || 'badge-gray'}">${c.estado}</span></td>
                     <td>
@@ -4569,9 +4656,12 @@ async function cargarListaCitas() {
                     </td>
                 </tr>
             `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="loading">No hay citas programadas</td></tr>';
         }
     } catch (error) {
         console.error('Error cargando lista de citas:', error);
+        tbody.innerHTML = '<tr><td colspan="8" class="error">Error al cargar citas</td></tr>';
     }
 }
 
@@ -4732,9 +4822,7 @@ function doLogout() {
 // FUNCIONES PARA CARNET DE VACUNAS
 // ============================================
 
-let mascotaActual = null;
-
-// Cargar cartilla de vacunas de una mascota
+if (typeof mascotaActual === 'undefined') { var mascotaActual = null; }
 async function cargarCartillaVacunas(mascotaId) {
     mascotaActual = mascotaId;
     
@@ -4936,7 +5024,681 @@ async function validarCitaInteligente(datos) {
     }
 }
 
+// ============================================
+// GROOMING - FICHAS DE SERVICIO
+// ============================================
+
+let servicioActual = null;
+let checklistItems = [];
+
+// Cargar servicios activos (cola de espera)
+async function cargarServiciosActivos() {
+    const container = document.getElementById('colaEsperaContainer');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading">Cargando servicios activos...</div>';
+    
+    try {
+        const response = await fetch(API_URL + 'citas.php?estado=en_progreso,pendiente,confirmada');
+        const data = await response.json();
+        
+        if (data.success && data.citas) {
+            const activas = data.citas.filter(c => c.estado !== 'completada' && c.estado !== 'cancelada');
+            
+            if (activas.length === 0) {
+                container.innerHTML = '<p style="color:var(--gray);text-align:center;padding:20px">No hay servicios activos en este momento</p>';
+                return;
+            }
+            
+            let html = '<div style="display:flex;flex-direction:column;gap:8px">';
+            activas.forEach(cita => {
+                const estadoColor = cita.estado === 'en_progreso' ? 'badge-orange' : 'badge-blue';
+                const estadoTexto = cita.estado === 'en_progreso' ? 'En progreso' : 'Pendiente';
+                html += `
+                    <div onclick="cargarFichaServicio(${cita.id})" style="
+                        padding: 12px;
+                        background: white;
+                        border: 1px solid #e0e0e0;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.borderColor='#2D7A6B'" onmouseout="this.style.borderColor='#e0e0e0'">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong>${escapeHtml(cita.mascota_nombre || 'Mascota')}</strong><br>
+                                <small style="color:#666;">${cita.hora || '--:--'} · ${escapeHtml(cita.servicio_nombre || 'Servicio')}</small>
+                            </div>
+                            <span class="badge ${estadoColor}">${estadoTexto}</span>
+                        </div>
+                        <div style="font-size:0.7rem; color:#888; margin-top:5px;">
+                            Cliente: ${escapeHtml(cita.cliente_nombre || 'No especificado')}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="error">Error al cargar servicios activos</div>';
+        }
+    } catch (error) {
+        console.error('Error cargando servicios activos:', error);
+        container.innerHTML = '<div class="error">Error de conexión</div>';
+    }
+}
+
+// Cargar historial del groomer (servicios completados)
+async function cargarHistorialGroomer() {
+    const container = document.getElementById('historialGroomerContainer');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading">Cargando historial...</div>';
+    
+    try {
+        const response = await fetch(API_URL + 'citas.php?estado=completada&limit=20');
+        const data = await response.json();
+        
+        if (data.success && data.citas) {
+            if (data.citas.length === 0) {
+                container.innerHTML = '<p style="color:var(--gray);text-align:center;padding:20px">No hay servicios completados recientemente</p>';
+                return;
+            }
+            
+            let html = '<div style="display:flex;flex-direction:column;gap:8px">';
+            data.citas.forEach(cita => {
+                html += `
+                    <div style="
+                        padding: 10px;
+                        background: #f5f5f5;
+                        border-radius: 8px;
+                        border-left: 3px solid #2EA87A;
+                    ">
+                        <div style="display:flex; justify-content:space-between;">
+                            <div>
+                                <strong>${escapeHtml(cita.mascota_nombre || 'Mascota')}</strong>
+                                <div style="font-size:0.7rem; color:#666;">${cita.fecha || 'Fecha no disponible'} · ${cita.hora || '--:--'}</div>
+                            </div>
+                            <span class="badge badge-green">✓ Completado</span>
+                        </div>
+                        <div style="font-size:0.7rem; color:#888; margin-top:5px;">
+                            Servicio: ${escapeHtml(cita.servicio_nombre || 'No especificado')}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="error">Error al cargar historial</div>';
+        }
+    } catch (error) {
+        console.error('Error cargando historial:', error);
+        container.innerHTML = '<div class="error">Error de conexión</div>';
+    }
+}
+
+// Cargar ficha de un servicio específico
+async function cargarFichaServicio(citaId) {
+    console.log('📋 Cargando ficha para cita:', citaId);
+    
+    try {
+        const response = await fetch(API_URL + 'citas.php?id=' + citaId);
+        const data = await response.json();
+        
+        if (data.success && data.cita) {
+            servicioActual = data.cita;
+            
+            // Actualizar UI
+            document.getElementById('citaIdLabel').textContent = `CITA #${servicioActual.id} · ${servicioActual.fecha || 'Fecha no disponible'}`;
+            document.getElementById('servicioTitle').innerHTML = `🐈 ${escapeHtml(servicioActual.mascota_nombre || 'Mascota')} — ${escapeHtml(servicioActual.servicio_nombre || 'Servicio')}`;
+            document.getElementById('servicioInfo').innerHTML = `Dueño: ${escapeHtml(servicioActual.cliente_nombre || 'No especificado')} · Groomer: ${escapeHtml(servicioActual.groomer_nombre || 'Por asignar')}`;
+            
+            // Estado badge
+            const estadoBadge = document.getElementById('servicioEstadoBadge');
+            if (servicioActual.estado === 'completada') {
+                estadoBadge.className = 'badge badge-green';
+                estadoBadge.innerHTML = '✅ Completado';
+                document.getElementById('cerrarServicioBtn').disabled = true;
+                document.getElementById('guardarFichaBtn').disabled = true;
+                // Bloquear edición
+                document.querySelectorAll('.checklist-obs').forEach(input => input.readOnly = true);
+                document.getElementById('servicioObservaciones').readOnly = true;
+            } else if (servicioActual.estado === 'en_progreso') {
+                estadoBadge.className = 'badge badge-orange';
+                estadoBadge.innerHTML = '⏳ En progreso';
+                document.getElementById('cerrarServicioBtn').disabled = false;
+                document.getElementById('guardarFichaBtn').disabled = false;
+                document.querySelectorAll('.checklist-obs').forEach(input => input.readOnly = false);
+                document.getElementById('servicioObservaciones').readOnly = false;
+            } else {
+                estadoBadge.className = 'badge badge-blue';
+                estadoBadge.innerHTML = '📅 Pendiente';
+                document.getElementById('cerrarServicioBtn').disabled = true;
+                document.getElementById('guardarFichaBtn').disabled = false;
+                document.querySelectorAll('.checklist-obs').forEach(input => input.readOnly = false);
+                document.getElementById('servicioObservaciones').readOnly = false;
+            }
+            
+            // Información de la mascota
+            document.getElementById('mascotaInfo').innerHTML = `
+                <strong>${escapeHtml(servicioActual.mascota_nombre)}</strong><br>
+                ${servicioActual.raza ? `Raza: ${escapeHtml(servicioActual.raza)}<br>` : ''}
+                ${servicioActual.especie ? `Especie: ${escapeHtml(servicioActual.especie)}` : ''}
+            `;
+            
+            // Duración base
+            const duracion = servicioActual.duracion_min || 
+                            (servicioActual.servicio_id === 1 ? 30 : 
+                             servicioActual.servicio_id === 2 ? 60 : 90);
+            document.getElementById('duracionBase').textContent = `${duracion} min`;
+            document.getElementById('duracionInfo').textContent = `Duración base del servicio`;
+            
+            // Cargar checklist guardado
+            await cargarChecklistGuardado(citaId);
+            
+            // Cargar observaciones guardadas
+            const obsTextarea = document.getElementById('servicioObservaciones');
+            if (servicioActual.observaciones) {
+                obsTextarea.value = servicioActual.observaciones;
+            } else {
+                obsTextarea.value = '';
+            }
+            
+        } else {
+            showToast('Error al cargar la ficha del servicio', 'error');
+        }
+    } catch (error) {
+        console.error('Error cargando ficha:', error);
+        showToast('Error de conexión', 'error');
+    }
+}
+
+// Cargar checklist guardado
+async function cargarChecklistGuardado(citaId) {
+    try {
+        const response = await fetch(API_URL + 'grooming_checklist.php?cita_id=' + citaId);
+        const data = await response.json();
+        
+        // Resetear checklist
+        document.querySelectorAll('.checklist-item').forEach((item, index) => {
+            item.classList.remove('checked');
+            const checkDiv = item.querySelector('.checklist-check');
+            if (checkDiv) checkDiv.textContent = '';
+            const input = item.querySelector('.checklist-obs');
+            if (input) input.value = '';
+        });
+        
+        if (data.success && data.checklist) {
+            data.checklist.forEach(item => {
+                const checklistItem = document.querySelector(`.checklist-item[data-id="${item.item_id}"]`);
+                if (checklistItem) {
+                    if (item.completado) {
+                        checklistItem.classList.add('checked');
+                        const checkDiv = checklistItem.querySelector('.checklist-check');
+                        if (checkDiv) checkDiv.textContent = '✓';
+                    }
+                    const input = checklistItem.querySelector('.checklist-obs');
+                    if (input && item.observacion) {
+                        input.value = item.observacion;
+                    }
+                }
+            });
+        }
+        
+        actualizarContadorChecklist();
+        
+    } catch (error) {
+        console.log('No hay checklist guardado previamente');
+        actualizarContadorChecklist();
+    }
+}
+
+// Actualizar contador de checklist
+function actualizarContadorChecklist() {
+    const checked = document.querySelectorAll('.checklist-item.checked').length;
+    const total = document.querySelectorAll('.checklist-item').length;
+    const counter = document.getElementById('checkCount');
+    if (counter) counter.textContent = `(${checked}/${total} completados)`;
+}
+
+// Toggle checklist item
+function toggleCheck(el) {
+    if (servicioActual && servicioActual.estado === 'completada') {
+        showToast('Este servicio ya está completado, no se puede modificar', 'error');
+        return;
+    }
+    el.classList.toggle('checked');
+    const check = el.querySelector('.checklist-check');
+    check.textContent = el.classList.contains('checked') ? '✓' : '';
+    actualizarContadorChecklist();
+}
+
+// Guardar ficha de grooming
+async function guardarFichaGrooming() {
+    if (!servicioActual) {
+        showToast('No hay ningún servicio seleccionado', 'error');
+        return;
+    }
+    
+    if (servicioActual.estado === 'completada') {
+        showToast('Este servicio ya está completado', 'error');
+        return;
+    }
+    
+    const observaciones = document.getElementById('servicioObservaciones').value;
+    
+    // Recopilar checklist
+    const checklist = [];
+    document.querySelectorAll('.checklist-item').forEach(item => {
+        const itemId = parseInt(item.getAttribute('data-id'));
+        const completado = item.classList.contains('checked');
+        const observacion = item.querySelector('.checklist-obs')?.value || '';
+        checklist.push({ item_id: itemId, completado, observacion });
+    });
+    
+    const btn = document.getElementById('guardarFichaBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Guardando...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(API_URL + 'grooming_checklist.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cita_id: servicioActual.id,
+                checklist: checklist,
+                observaciones: observaciones
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('✅ Ficha guardada correctamente', 'success');
+        } else {
+            showToast('❌ Error: ' + (data.error || 'No se pudo guardar'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Cerrar servicio (marcar como completado)
+async function cerrarServicioGrooming() {
+    if (!servicioActual) {
+        showToast('No hay ningún servicio seleccionado', 'error');
+        return;
+    }
+    
+    if (servicioActual.estado === 'completada') {
+        showToast('Este servicio ya está completado', 'error');
+        return;
+    }
+    
+    const checked = document.querySelectorAll('.checklist-item.checked').length;
+    const total = document.querySelectorAll('.checklist-item').length;
+    
+    if (checked < total) {
+        showToast(`❌ Debes completar todos los ${total} items del checklist antes de cerrar el servicio`, 'error');
+        return;
+    }
+    
+    if (!confirm('¿Estás seguro de cerrar este servicio? Se marcará como completado y no se podrá modificar.')) return;
+    
+    // Primero guardar la ficha
+    const observaciones = document.getElementById('servicioObservaciones').value;
+    const checklist = [];
+    document.querySelectorAll('.checklist-item').forEach(item => {
+        const itemId = parseInt(item.getAttribute('data-id'));
+        const completado = item.classList.contains('checked');
+        const observacion = item.querySelector('.checklist-obs')?.value || '';
+        checklist.push({ item_id: itemId, completado, observacion });
+    });
+    
+    const btn = document.getElementById('cerrarServicioBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Cerrando servicio...';
+    btn.disabled = true;
+    
+    try {
+        // Guardar ficha primero
+        await fetch(API_URL + 'grooming_checklist.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cita_id: servicioActual.id,
+                checklist: checklist,
+                observaciones: observaciones
+            })
+        });
+        
+        // Marcar cita como completada
+        const response = await fetch(API_URL + 'citas.php', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: servicioActual.id,
+                estado: 'completada'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('✅ Servicio completado exitosamente', 'success');
+            
+            // Actualizar UI
+            const estadoBadge = document.getElementById('servicioEstadoBadge');
+            estadoBadge.className = 'badge badge-green';
+            estadoBadge.innerHTML = '✅ Completado';
+            document.getElementById('cerrarServicioBtn').disabled = true;
+            document.getElementById('guardarFichaBtn').disabled = true;
+            document.querySelectorAll('.checklist-obs').forEach(input => input.readOnly = true);
+            document.getElementById('servicioObservaciones').readOnly = true;
+            
+            // Recargar listas
+            cargarServiciosActivos();
+            cargarHistorialGroomer();
+            
+            servicioActual.estado = 'completada';
+        } else {
+            showToast('❌ Error: ' + (data.error || 'No se pudo completar el servicio'), 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Inicializar página de grooming al cargar
+function initGroomingPage() {
+    cargarServiciosActivos();
+    cargarHistorialGroomer();
+}
+
+// Llamar a initGroomingPage cuando se navegue a la página de grooming
+// Modificar navigateTo para incluir esto
+const originalNavigateTo = navigateTo;
+window.navigateTo = function(pageId) {
+    originalNavigateTo(pageId);
+    if (pageId === 'grooming') {
+        initGroomingPage();
+    }
+};
+
+// ============================================
+// GROOMING - GESTIÓN DE CITAS (VERSIÓN COMPLETA)
+// ============================================
+
+let citaSeleccionada = null;
+let checklistItemsGrooming = [];
+
+// Variable global para la cita seleccionada en el modal
+let citaParaEditar = null;
+
+// Abrir modal de gestión de cita
+async function abrirModalGestionCita(citaId) {
+    console.log('🔵 Abriendo gestión de cita ID:', citaId);
+    
+    try {
+        const response = await fetch(`${API_URL}citas.php?id=${citaId}`);
+        const data = await response.json();
+        
+        if (data.success && data.cita) {
+            citaParaEditar = data.cita;
+            
+            // Llenar información básica
+            document.getElementById('gestionCitaId').value = citaParaEditar.id;
+            document.getElementById('gestionCitaInfo').innerHTML = `
+                <div style="background: var(--teal-pale); padding: 12px; border-radius: 12px; margin-bottom: 15px;">
+                    <div><strong>🐾 Mascota:</strong> ${escapeHtml(citaParaEditar.mascota_nombre)}</div>
+                    <div><strong>👤 Cliente:</strong> ${escapeHtml(citaParaEditar.cliente_nombre)}</div>
+                    <div><strong>📅 Fecha:</strong> ${citaParaEditar.fecha} - ${citaParaEditar.hora}</div>
+                    <div><strong>✂️ Servicio:</strong> ${escapeHtml(citaParaEditar.servicio_nombre)}</div>
+                </div>
+            `;
+            
+            // Estado actual
+            const estadoSelect = document.getElementById('gestionCitaEstado');
+            if (estadoSelect) {
+                estadoSelect.value = citaParaEditar.estado;
+            }
+            
+            // Groomer actual
+            const groomerSelect = document.getElementById('gestionCitaGroomer');
+            if (groomerSelect && citaParaEditar.groomer_id) {
+                groomerSelect.value = citaParaEditar.groomer_id;
+            }
+            
+            // Observaciones
+            const obsTextarea = document.getElementById('gestionCitaObservaciones');
+            if (obsTextarea) {
+                obsTextarea.value = citaParaEditar.observaciones || '';
+            }
+            
+            // Cargar checklist
+            await cargarChecklistEnModal(citaParaEditar.id);
+            
+            // Abrir modal
+            openModal('modalGestionCita');
+        } else {
+            showToast('Error al cargar la cita', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error de conexión', 'error');
+    }
+}
+
+// Cargar checklist en el modal
+async function cargarChecklistEnModal(citaId) {
+    const container = document.getElementById('gestionChecklistContainer');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading">Cargando checklist...</div>';
+    
+    try {
+        const response = await fetch(`${API_URL}grooming_checklist.php?cita_id=${citaId}`);
+        const data = await response.json();
+        
+        // Items predefinidos del checklist
+        const itemsPredefinidos = [
+            { id: 1, nombre: '🛁 Baño', icono: '🛁' },
+            { id: 2, nombre: '✂️ Corte de pelo', icono: '✂️' },
+            { id: 3, nombre: '💅 Corte de uñas', icono: '💅' },
+            { id: 4, nombre: '👂 Limpieza de oídos', icono: '👂' },
+            { id: 5, nombre: '🫧 Expresión de glándulas', icono: '🫧' },
+            { id: 6, nombre: '🌸 Perfume / acabado', icono: '🌸' }
+        ];
+        
+        // Mapear datos guardados
+        const savedMap = {};
+        if (data.success && data.checklist) {
+            data.checklist.forEach(item => {
+                savedMap[item.item_id] = { completado: item.completado, observacion: item.observacion };
+            });
+        }
+        
+        let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+        itemsPredefinidos.forEach(item => {
+            const saved = savedMap[item.id] || { completado: false, observacion: '' };
+            html += `
+                <div class="checklist-item-gestion" data-id="${item.id}" style="
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 10px;
+                    background: ${saved.completado ? 'var(--teal-pale)' : 'var(--white)'};
+                    border: 1px solid var(--gray-light);
+                    border-radius: 8px;
+                ">
+                    <div class="checklist-check-gestion" onclick="toggleChecklistItem(${item.id})" style="
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 50%;
+                        border: 2px solid var(--teal);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        background: ${saved.completado ? 'var(--teal)' : 'transparent'};
+                        color: ${saved.completado ? 'white' : 'transparent'};
+                    ">✓</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 500;">${item.nombre}</div>
+                        <input type="text" class="checklist-obs-gestion" data-id="${item.id}" 
+                               placeholder="Observación..." 
+                               value="${escapeHtml(saved.observacion)}"
+                               style="width: 100%; padding: 5px; margin-top: 5px; border: 1px solid var(--gray-light); border-radius: 5px; font-size: 0.8rem;">
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error cargando checklist:', error);
+        container.innerHTML = '<div class="error">Error al cargar checklist</div>';
+    }
+}
+
+// Toggle checklist item
+function toggleChecklistItem(itemId) {
+    const itemDiv = document.querySelector(`.checklist-item-gestion[data-id="${itemId}"]`);
+    const checkDiv = itemDiv?.querySelector('.checklist-check-gestion');
+    if (checkDiv) {
+        const isChecked = checkDiv.style.background === 'rgb(45, 122, 107)' || checkDiv.style.background === 'var(--teal)';
+        if (isChecked) {
+            checkDiv.style.background = 'transparent';
+            checkDiv.style.color = 'transparent';
+            itemDiv.style.background = 'var(--white)';
+        } else {
+            checkDiv.style.background = 'var(--teal)';
+            checkDiv.style.color = 'white';
+            itemDiv.style.background = 'var(--teal-pale)';
+        }
+    }
+}
+
+// Guardar cambios de la cita (estado, groomer, observaciones, checklist)
+async function guardarGestionCita() {
+    const citaId = document.getElementById('gestionCitaId').value;
+    const nuevoEstado = document.getElementById('gestionCitaEstado').value;
+    const nuevoGroomerId = document.getElementById('gestionCitaGroomer').value;
+    const observaciones = document.getElementById('gestionCitaObservaciones').value;
+    
+    // Recopilar checklist
+    const checklist = [];
+    document.querySelectorAll('.checklist-item-gestion').forEach(item => {
+        const itemId = parseInt(item.getAttribute('data-id'));
+        const checkDiv = item.querySelector('.checklist-check-gestion');
+        const completado = checkDiv?.style.background === 'rgb(45, 122, 107)' || checkDiv?.style.background === 'var(--teal)';
+        const observacionInput = item.querySelector('.checklist-obs-gestion');
+        const observacion = observacionInput ? observacionInput.value : '';
+        checklist.push({ item_id: itemId, completado, observacion });
+    });
+    
+    const btn = document.querySelector('#modalGestionCita .btn-teal');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Guardando...';
+    btn.disabled = true;
+    
+    try {
+        // 1. Actualizar cita (estado, groomer, observaciones)
+        const updateData = {
+            id: parseInt(citaId),
+            estado: nuevoEstado,
+            observaciones: observaciones
+        };
+        if (nuevoGroomerId && nuevoGroomerId !== '') {
+            updateData.groomer_id = parseInt(nuevoGroomerId);
+        }
+        
+        const responseCita = await fetch(API_URL + 'citas.php', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+        });
+        
+        const dataCita = await responseCita.json();
+        
+        if (!dataCita.success) {
+            showToast('❌ Error al actualizar la cita: ' + (dataCita.error || 'Error desconocido'), 'error');
+            return;
+        }
+        
+        // 2. Guardar checklist
+        const responseChecklist = await fetch(API_URL + 'grooming_checklist.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cita_id: parseInt(citaId),
+                checklist: checklist,
+                observaciones: observaciones
+            })
+        });
+        
+        const dataChecklist = await responseChecklist.json();
+        
+        if (dataChecklist.success) {
+            showToast('✅ Cita y checklist guardados correctamente', 'success');
+            closeModal('modalGestionCita');
+            
+            // Recargar datos
+            if (typeof cargarCitasSemana === 'function') cargarCitasSemana();
+            if (typeof cargarListaCitas === 'function') cargarListaCitas();
+            if (typeof cargarServiciosActivos === 'function') cargarServiciosActivos();
+            
+            // Si el estado cambió a completada, actualizar UI
+            if (nuevoEstado === 'completada' && typeof cargarHistorialGroomer === 'function') {
+                cargarHistorialGroomer();
+            }
+        } else {
+            showToast('❌ Error al guardar checklist', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión: ' + error.message, 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Ver detalle de cita y permitir acciones (VERSIÓN MEJORADA)
+async function verDetalleCita(citaId) {
+    try {
+        const response = await fetch(`${API_URL}citas.php?id=${citaId}`);
+        const data = await response.json();
+        
+        if (data.success && data.cita) {
+            const cita = data.cita;
+            
+            // Mostrar modal de gestión en lugar de alert
+            abrirModalGestionCita(citaId);
+        } else {
+            showToast('Error al cargar detalle de la cita', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error de conexión', 'error');
+    }
+}
+
+
 </script>
-</script>
+
+
 </body>
 </html>

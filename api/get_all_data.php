@@ -64,7 +64,36 @@ $sql = "SELECT m.*, u.nombre as duenio_nombre
 $result = $conn->query($sql);
 $data['mascotas'] = $result->fetch_all(MYSQLI_ASSOC);
 
-// 6. Configuración
+// 6. Servicios
+$result = $conn->query("SELECT * FROM servicios WHERE activo = 1 ORDER BY nombre");
+if ($result) {
+    $data['servicios'] = $result->fetch_all(MYSQLI_ASSOC);
+} else {
+    $data['servicios'] = [];
+}
+
+// 7. Groomers
+$sql = "SELECT g.id, g.horario_inicio, g.horario_fin, u.nombre, u.email
+        FROM groomers g
+        JOIN usuarios u ON g.usuario_id = u.id
+        WHERE g.activo = 1
+        ORDER BY u.nombre";
+$result = $conn->query($sql);
+if ($result) {
+    $data['groomers'] = $result->fetch_all(MYSQLI_ASSOC);
+} else {
+    $data['groomers'] = [];
+}
+
+// 8. Mascotas - CON DATOS COMPLETOS
+$sql = "SELECT m.*, u.nombre as duenio_nombre, u.id as duenio_id
+        FROM mascotas m 
+        JOIN usuarios u ON m.cliente_id = u.id
+        WHERE u.rol = 'client' AND u.activo = 1";
+$result = $conn->query($sql);
+$data['mascotas'] = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+
+// 9. Configuración
 $result = $conn->query("SELECT * FROM config LIMIT 1");
 if ($result && $result->num_rows > 0) {
     $data['config'] = $result->fetch_assoc();
@@ -78,12 +107,4 @@ if ($result && $result->num_rows > 0) {
 }
 
 echo json_encode(['success' => true, 'data' => $data]);
-
-// 5. Mascotas - CON DATOS COMPLETOS
-$sql = "SELECT m.*, u.nombre as duenio_nombre, u.id as duenio_id
-        FROM mascotas m 
-        JOIN usuarios u ON m.cliente_id = u.id
-        WHERE u.rol = 'client' AND u.activo = 1";
-$result = $conn->query($sql);
-$data['mascotas'] = $result->fetch_all(MYSQLI_ASSOC);
 ?>

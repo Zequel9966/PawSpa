@@ -36,10 +36,11 @@ function guardarLog($conn, $tipo, $accion, $detalle) {
 }
 
 // ============================================
-// GET - Obtener clientes (solo admin y recep)
+// GET - Obtener clientes (admin, recep y groomers)
 // ============================================
 if ($method === 'GET' && !isset($_GET['action'])) {
-    if (!in_array($usuario['rol'], ['admin', 'recep'])) {
+    // Permitir a admin, recepcionistas y GROOMERS ver clientes (para crear citas)
+    if (!in_array($usuario['rol'], ['admin', 'recep', 'groo'])) {
         echo json_encode(['success' => false, 'error' => 'No tienes permiso para ver clientes']);
         exit;
     }
@@ -95,9 +96,9 @@ if ($method === 'GET' && $action === 'mascotas_cliente') {
     }
     
     // Verificar permiso
-    if ($usuario['rol'] !== 'admin' && $usuario['rol'] !== 'recep' && $usuario['id'] != $cliente_id) {
-        echo json_encode(['success' => false, 'error' => 'No tienes permiso para ver estas mascotas']);
-        exit;
+    if ($usuario['rol'] !== 'admin' && $usuario['rol'] !== 'recep' && $usuario['rol'] !== 'groo' && $usuario['id'] != $cliente_id) {
+    echo json_encode(['success' => false, 'error' => 'No tienes permiso para ver estas mascotas']);
+    exit;
     }
     
     $stmt = $conn->prepare("SELECT * FROM mascotas WHERE cliente_id = ? ORDER BY nombre");

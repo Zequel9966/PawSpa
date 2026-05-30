@@ -2,16 +2,11 @@
 // app.js - PawSpa Sistema Integral
 // ============================================
 
-const API_URL = '/pawspa/api/';
 
-// Variables globales
-let IS_ADMIN = false;
-let IS_CLIENT = false;
-let IS_RECEP = false;
-let IS_GROOMER = false;
-let currentUser = null;
-let mascotaActual = null;
-let mascotasCliente = [];
+
+// Variables propias de app.js (no declaradas en index.php)
+var mascotaActual = mascotaActual || null;
+var mascotasCliente = mascotasCliente || [];
 
 // ============================================
 // FUNCIONES AUXILIARES
